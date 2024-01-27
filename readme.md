@@ -32,6 +32,7 @@ These are some sample complex insights that are a project in its own right. Howe
  - Has the dimensions updated soon after a new patch or hotfix is pushed.
  - Requires a minimal amount of joins to ingest and visualize.
  - Provides a single platform to easily pull data from.
+ - Data volume large enough to support AI processes (at least GBs).
 
 Before we go into the datasets, some of these require access to Riot's API and their IP. To account for that, please read the following legal disclaimer:
 
@@ -77,21 +78,38 @@ Azure Synapse Analytics is Microsoft Azure's all in one shop for data integratio
 - Orchestration of pipelines to run, which will be essential to pull data while avoiding the API rate limit.
 - Streaming data option.
 
-The downside of Synapse is it's cost. For the convenience, it does require payment. However, Azure does provide $200 in credits used within the first month. By the end of February, the project is expected to have the dataset complete, where the costs will be assessed to either keep or slowly deprecate Synapse for other tools and flows.
+The downside of Synapse is it's cost. For the convenience, it does require payment. However, Azure does provide $200 in credits used within the first month. By the end of February, the project is expected to have the dataset complete, where the costs will be assessed to either keep or slowly deprecate Synapse for other tools and flows. There were alternatives considered, such as dbt, Airflow, and other tools taught in the course, but Synapse seems too good at the moment to use. If I were to use another data tool, I am interested in seeing what [Tobiko](https://tobikodata.com/) has to offer after [meeting the Co-founders at a data social](https://www.linkedin.com/posts/hjersmanj_devprofs-sfbayarea-data-activity-7140939824257052672-91Ix?utm_source=share&utm_medium=member_desktop).
 
 ## Schema and Diagrams
 Below is the current proces in obtaining the non-WIP datasets and transforming it into one dataset with supplied metrics.
 
 ![Current Diagram](readme_links/LoL_Data_Engineering_Diagram_Jan_2024.png)
 
-You'll notice that some of the flows have the prompt to deprecate T1 SCD. While these should be T2 SCDs since it is logged by patch, the issue is that there is no simple method to ensure Riot updated the information correctly after reading this statement from their API docs:
+You'll notice that some of the flows have the prompt to deprecate T1 SCD. While these should be T2 SCDs since it is logged by patch, the issue is that there is no simple method to ensure Riot updated the information correctly [after reading this statement from their API docs](https://developer.riotgames.com/docs/lol#data-dragon):
 
 > Updating Data Dragon after each League of Legends patch is a manual process, so it is not always updated immediately after a patch.
 
 Because of this, it is not ideal to rely on Data Dragon (the JSON apis used for some of the Dim data) in the future. There are some files that seek to scrape the data. However, to remain an ethical scraper, that project was delayed until it is refactored to scrape from [The LoL Wiki](https://leagueoflegends.fandom.com/wiki/Item_(League_of_Legends)). You can view the [current progress of the code here](https://github.com/HjersmanJ/LoL-Item-Datamining/blob/data_engineering/notebook/Web%20Scraping%20LoL%20items.json).
 
-The flow begins by grabbing the relevant dimensional data on items, champions, and summoner info to convert to puuids. With the Fct Data, the summoner info provided to convert to the correct key that is used in the Fct Matches dataset. Once this is correctly aggregated and partitioned by league (since an account can only be in one league at any given moment in time), the match dataset is unnested with the required items appended or joined to produce the metrics.
+The flow begins by grabbing the relevant dimensional data on items, champions, and summoner info to convert to puuids. With the Fct Data, initially I thought that one would have to use Dim_Account for that process, but because it uses 'summonerId', we need to use the Summoner API. It is somewhat troublesome being in the middle of a tiered deprecation process where some endpoints are deprecated but others are not. This is used to convert the summoner info provided to convert to the correct key that is used in the Fct Matches dataset. Once this is correctly aggregated and partitioned by league (since an account can only be in one league at any given moment in time), the match dataset is unnested with the required items appended or joined to produce the metrics.
 
 ![Current Schema](readme_links/LoL_Data_Engineering_Schema_Jan_2024.png)
 
 Most of the schema closely matches the sources of what Riot provides, though a focus is in the Fct_Match table, participants was a nested array of strings of puuids. Since that is not in an easily digestible state for [OLAP](https://www.ibm.com/topics/olap), it is unnested. It does cause a 10x cardinality explosion, but due to the nature of how often accounts will be used for metrics, this is a decision that must be made to ensure the data is easily usable as promised in the Datasets section.
+
+## Data Flow and Pipelines
+There are 4 data sources, each of which will at minimum have row count and null checks. Some will have more complex processes. Note to keep costs down at this stage, they will be pulled from csvs and uploaded into the Synapse Serverless DB. In the future, the data will be sourced and sinked in external databases. 
+
+Starting relatively simple, here is the following data flow for *Dim_Champion_Details_Validation*:
+
+![DimChampionDetailsValidation](readme_links/Dim_Champion_Details_Data_Flow.png)
+
+All data flows must have a source and a sink. The source is of course the DimItemDetailsValidation that was pulled from the Downloading_Lol_Data Notebook accessing the Riot API. The flow in order checks for NullNames to ensure an enumerated value doesn't house a blank champion (note: there are more enums than champions because [many champions have been in development and scrapped](https://leagueoflegends.fandom.com/wiki/Category:Cancelled_champions)). Then the flow deposits the data into the serverless sink for ItemValidation to log the values for later viewing, assuming the job was successful.
+
+That was fairly barebones, but for such small dimensional data, there often isn't more to check. One consideration is to match the names with another verified list of champions. If one doesn't match, then the pipeline should fail. Once Champion data is scraped, this would be relegated into that supportive dataset.
+
+The *Fct_League_Info_Data_Flow* is an example of a more complex process:
+
+![FctLeagueInfo](readme_links/Fct_League_Info_Data_Flow.png)
+
+The flow starts by splitting the stream into two to allow concurrent runtime of the checks. The bottom branch performs the data validation check as was shown above. In the future, that check will turn into a flowlet, which can be thought of as a function in a programming language for reusability. I ascribe to the WET (Write Everything Twice) and [YAGNI principles, but not opposed to refactoring to adhere to DRY principles later](https://www.boldare.com/blog/kiss-yagni-dry-principles/#what-is-the-kiss-principle?-what-is-yagni-principle?).
