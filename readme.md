@@ -40,7 +40,7 @@ Before we go into the datasets, some of these require access to Riot's API and t
  
  To fulfil the required final dataset, we need data that can provide the basis for these. We will start with the Riot API and what it has to offer. Below is what is currently implemented and what is a future is in **(WIP)** which stands for **Work In Progress**.
 
- - [Account Information](https://developer.riotgames.com/apis#account-v1)
+ - [Account Information](https://developer.riotgames.com/apis#account-v1) **(WIP)**
  - [Summoner Information](https://developer.riotgames.com/apis#summoner-v4)
 
  To tie the info to certain accounts that can give information to playstyle, trends, and preferred champions, the account information is required. Since some Riot APIs deprecate summoner info, account information is used, but some still use summonerId instead of a puuid. Both are required to union an account's information. 
@@ -61,3 +61,35 @@ To avoid cardinality explosions at this stage, only summoner's rift 5v5 is used.
 - [Champion Mastery](https://developer.riotgames.com/apis#champion-mastery-v4) **(WIP)**
 
 Finally we come to the fact data which is a large amount of what the data mining will be based off of. The Match Data has a large amount of columns, some of which are in complex forms (e.g. arrays) or enumerated fields. This project serves to unnest, dedupe, and provide a simple table to join post-shuffle.
+
+## Tech Stack Used
+For now, the tech stack is deceptively complicated for the low amount of tools:
+- Python Notebooks
+- Azure Synapse Analytics
+
+Azure Synapse Analytics is Microsoft Azure's all in one shop for data integration. It differs from Data Factory in that it has more tools to support data scientists and integration with other microservices, such as Azure ML Studio. As a data scientist and data integration lead, I have used Azure Synapse for some time, but not often did I use it to handle data engineering tasks. With the skills developed at EcZachly's Data Engineering bootcamp in addition to my experience, the power of the tool is shown with these characteristics:
+
+- Creation and running of Python Notebooks.
+- Connection with external data sources or provisioned data systems such as blob or SQL DBs.
+- Data Engineering flows and pipelines readily created in the workspace. 
+- Various validation methods similar to dbt that can perform simple sanity checks or complex queries.
+- In the event a check is too complex for the native data flow tools, synapse offers seamless integration with notebooks, SQL scripts, and external and dedicated data sources.
+- Orchestration of pipelines to run, which will be essential to pull data while avoiding the API rate limit.
+- Streaming data option.
+
+The downside of Synapse is it's cost. For the convenience, it does require payment. However, Azure does provide $200 in credits used within the first month. By the end of February, the project is expected to have the dataset complete, where the costs will be assessed to either keep or slowly deprecate Synapse for other tools and flows.
+
+## Schema and Diagrams
+Below is the current proces in obtaining the non-WIP datasets and transforming it into one dataset with supplied metrics.
+
+![Current Diagram](readme_links/LoL_Data_Engineering_Diagram_Jan_2024.png)
+
+You'll notice that some of the flows have the prompt to deprecate T1 SCD. While these should be T2 SCDs since it is logged by patch, the issue is that there is no simple method to ensure Riot updated the information correctly after reading this statement from their API docs:
+
+> Updating Data Dragon after each League of Legends patch is a manual process, so it is not always updated immediately after a patch.
+
+Because of this, it is not ideal to rely on Data Dragon (the JSON apis used for some of the Dim data) in the future. There are some files that seek to scrape the data. However, to remain an ethical scraper, that project was delayed until it is refactored to scrape from [The LoL Wiki](https://leagueoflegends.fandom.com/wiki/Item_(League_of_Legends)). You can view the [current progress of the code here](https://github.com/HjersmanJ/LoL-Item-Datamining/blob/data_engineering/notebook/Web%20Scraping%20LoL%20items.json).
+
+The flow begins by grabbing the relevant dimensional data on items, champions, and summoner info to convert to puuids. With the Fct Data, the summoner info provided to convert to the correct key that is used in the Fct Matches dataset. Once this is correctly aggregated and partitioned by league (since an account can only be in one league at any given moment in time), the match dataset is unnested with the required items appended or joined to produce the metrics. The data 
+
+![Current Schema](readme_links/LoL_Data_Engineering_Schema_Jan_2024.png)
