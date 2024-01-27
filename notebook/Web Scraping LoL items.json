@@ -1,0 +1,152 @@
+{
+	"name": "Web Scraping LoL items",
+	"properties": {
+		"nbformat": 4,
+		"nbformat_minor": 2,
+		"sessionProperties": {
+			"driverMemory": "28g",
+			"driverCores": 4,
+			"executorMemory": "28g",
+			"executorCores": 4,
+			"numExecutors": 2,
+			"runAsWorkspaceSystemIdentity": false,
+			"conf": {
+				"spark.dynamicAllocation.enabled": "false",
+				"spark.dynamicAllocation.minExecutors": "2",
+				"spark.dynamicAllocation.maxExecutors": "2",
+				"spark.autotune.trackingId": "2736e2d3-867c-4fe8-86b4-14d89504a4e5"
+			}
+		},
+		"metadata": {
+			"saveOutput": true,
+			"synapse_widget": {
+				"version": "0.1"
+			},
+			"enableDebugMode": false,
+			"kernelspec": {
+				"name": "synapse_pyspark",
+				"display_name": "python"
+			},
+			"language_info": {
+				"name": "python"
+			},
+			"sessionKeepAliveTimeout": 30
+		},
+		"cells": [
+			{
+				"cell_type": "code",
+				"source": [
+					"import csv\n",
+					"import os\n",
+					"import requests\n",
+					"import time\n",
+					"from bs4 import BeautifulSoup\n",
+					"import logging\n",
+					"\n",
+					"logging.basicConfig(level=logging.INFO)"
+				],
+				"execution_count": 2
+			},
+			{
+				"cell_type": "code",
+				"source": [
+					"def fetch_and_parse_page(url):\n",
+					"    headers = {\n",
+					"        \"User-Agent\": \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3\"\n",
+					"    }\n",
+					"    response = requests.get(url, headers=headers)\n",
+					"    soup = BeautifulSoup(response.text, 'html.parser')\n",
+					"    return soup"
+				],
+				"execution_count": 3
+			},
+			{
+				"cell_type": "markdown",
+				"source": [
+					"Setting the url to the items page and finding all divs that contain the links to the separate items."
+				]
+			},
+			{
+				"cell_type": "code",
+				"source": [
+					"base_url = \"https://u.gg/lol/items\"\n",
+					"soup = fetch_and_parse_page(base_url)\n",
+					"items_list = soup.find_all('div', class_='items-container')\n",
+					"print(items_list)"
+				]
+			},
+			{
+				"cell_type": "markdown",
+				"source": [
+					"Now to grab the name specifically which is in the 'alt' portion of the div (basically what shows up if the image couldn't load clientside). Note this doesn't need to be run every time, but is here when it does (e.g. each new patch or hotfix)."
+				]
+			},
+			{
+				"cell_type": "code",
+				"source": [
+					"with open('data/item_names.csv', 'w+', newline='') as item_names_csv:\n",
+					"    writer = csv.writer(item_names_csv)\n",
+					"    for item in items_list:\n",
+					"        item_name = item.find_all('img')\n",
+					"        for temp in item_name:\n",
+					"            if temp['alt']:\n",
+					"                print(temp['alt'])\n",
+					"                writer.writerow([temp['alt']])    "
+				]
+			},
+			{
+				"cell_type": "code",
+				"source": [
+					"def fetch_champion_data(champion, base_url):\n",
+					"    # Visit the champion's individual page\n",
+					"    champion_url = base_url + champion.lower() + \"/\" + \"build\"\n",
+					"    champion_soup = fetch_and_parse_page(champion_url)\n",
+					"\n",
+					"    try:\n",
+					"        role_value = champion_soup.find('span', class_='champion-title').text.strip().split('Build for ')[1].split(', ')[0]\n",
+					"        matches_value = champion_soup.find('div', class_='matches').find('div', class_='value').text.strip()\n",
+					"        win_rate_value = champion_soup.find('div', class_='win-rate').find('div', class_='value').text.strip()\n",
+					"        pick_rate_value = champion_soup.find('div', class_='pick-rate').find('div', class_='value').text.strip()\n",
+					"        ban_rate_value = champion_soup.find('div', class_='ban-rate').find('div', class_='value').text.strip()\n",
+					"    except Exception as e:\n",
+					"        logging.error(f'Error fetching data for {champion}: {str(e)}')\n",
+					"        return None\n",
+					"\n",
+					"    logging.info(f'{champion} done.')\n",
+					"    time.sleep(2)  # Consider making this configurable\n",
+					"    return [champion, role_value, matches_value, win_rate_value, pick_rate_value, ban_rate_value]"
+				]
+			},
+			{
+				"cell_type": "markdown",
+				"source": [
+					""
+				]
+			},
+			{
+				"cell_type": "code",
+				"source": [
+					"item_names_list = \n",
+					"item_url = base_url + \n",
+					"\n",
+					"temp = items_list.find('div', class_='item-details-container')\n",
+					"print(temp)"
+				]
+			},
+			{
+				"cell_type": "code",
+				"source": [
+					"with open('data/item_names.csv', 'w+', newline='') as item_names_csv:\n",
+					"    writer = csv.writer(item_names_csv)\n",
+					"    for item in items_list:\n",
+					"        item_name = item.find_all('img')\n",
+					"        for temp in item_name:\n",
+					"            if temp['alt']:\n",
+					"                print(temp['alt'])\n",
+					"                writer.writerow([temp['alt']])    "
+				],
+				"execution_count": 10
+			}
+		]
+	}
+}

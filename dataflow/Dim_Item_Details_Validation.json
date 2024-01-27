@@ -1,0 +1,49 @@
+{
+	"name": "Dim_Item_Details_Validation",
+	"properties": {
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"dataset": {
+						"referenceName": "dim_item_info",
+						"type": "DatasetReference"
+					},
+					"name": "DimItemDetailsValidation"
+				}
+			],
+			"sinks": [
+				{
+					"name": "ItemValidation"
+				}
+			],
+			"transformations": [
+				{
+					"name": "NullNames"
+				},
+				{
+					"name": "RowCount"
+				}
+			],
+			"scriptLines": [
+				"source(output(",
+				"          id as string,",
+				"          name as string",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     ignoreNoFilesFound: false) ~> DimItemDetailsValidation",
+				"DimItemDetailsValidation assert(expectTrue(!isNull(name), false, 'assert1')) ~> NullNames",
+				"NullNames aggregate(groupBy(id),",
+				"     column1 = count(1)) ~> RowCount",
+				"RowCount sink(validateSchema: false,",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true,",
+				"     store: 'cache',",
+				"     format: 'inline',",
+				"     output: false,",
+				"     saveOrder: 1) ~> ItemValidation"
+			]
+		}
+	}
+}
