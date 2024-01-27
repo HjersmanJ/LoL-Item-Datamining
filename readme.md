@@ -1,5 +1,7 @@
 # League of Legends Data Mining Project
 
+## Note to Grader: This project is still a WIP but currently satisfies the requirements of the capstone (with some standout characteristics). However, this project was far bigger than expected, but I am passionate to complete it. I intend to improve on this dataset in the coming weeks and eventually data mine this using my data science skills. Once that is complete, the GitHub will be made public. 
+
 # Overview
 The  final requirement to fulfill my desired certification level with EcZachly's Data Engineering Bootcamp is an engineered dataset from raw sources into a polished dataset using modern technologies. Despite that being the case of how this project started, the intent is to use this as a chance to perform data science on League of Legends. The focus of this project is to investigate the items in League of Legends, their performance, and metrics on what makes a good item and some assistance to discover interesting builds, both crowdsourced as it is today and certain unseen builds that might be worth a try.
 
@@ -113,3 +115,34 @@ The *Fct_League_Info_Data_Flow* is an example of a more complex process:
 ![FctLeagueInfo](readme_links/Fct_League_Info_Data_Flow.png)
 
 The flow starts by splitting the stream into two to allow concurrent runtime of the checks. The bottom branch performs the data validation check as was shown above. In the future, that check will turn into a flowlet, which can be thought of as a function in a programming language for reusability. I ascribe to the WET (Write Everything Twice) and [YAGNI principles, but not opposed to refactoring to adhere to DRY principles later](https://www.boldare.com/blog/kiss-yagni-dry-principles/#what-is-the-kiss-principle?-what-is-yagni-principle?).
+
+The 'leaguePoints' field from the incoming data stream might be strings when they should be integers, so the top branch ensures that it they are. Furthermore, for this lower-scale version, there is a verification to ensure that those in challenger league have at least 300 points (I'm certain it's higher but couldn't find a source). These are joined back together with the primary key 'puuid'. This is broadcast joined by 'leagueId', which automantically sizes the buckets, handling it at any scale. Note that Leagues usually don't contain more than 1000 participants. There will be a point where the scale goes too far in the partition zone, in which case, league and division, and eventually simply league would suffice in truly large data. After the join, 'puuid' was duplicated, and a quick fix is to simply unselect it. 
+
+Finally, since people are more interested in the top ranks more than the lower ranks, it is ordered by highest league points in descending order. Data Flows can be optimized using Spark, it can be partitioned by 'leagueID' since all tiers Masters and above are unique, and those not in those higher echelons won't have a 'leaguePoints' parameter for the ordinal function to consider. Normally ordinals are not ideal for big data, and if they are used, they should be used when the dataset is at its smallest. But in this case, it is relative to the entire dataset. If this were to be transferred for all ranks, this process can even scale in divisions and ranks.
+
+The Pipelines are relatively simple; it is just a matter of combining the data flows and running them through a scheduled or triggered process.
+
+![FactValidation](readme_links/League_Info_Validation_Pipeline.png)
+
+The League Info Validation Pipeline does just that, copying the data for each flow to have an input.
+
+![MatchDataTransformation](readme_links/Match_Data_Transformation_Pipeline.png)
+
+This one utilizes the wait function as a demonstration of how this would be orchestrated to circumvent the API rate limit. This also uses a data flow requiring two data sources to transform and join the data. The following flow is provided below.
+
+![Fct_Match_Info_Transformation](readme_links/Fct_Match_Info_Transformation.png)
+
+This one replaces the enumerated items with the item names for one portion of the dataset for those that want a single dataset (e.g. those not experienced with joins). It will also be useful for those looking to build a simple interactive dashboard. A **(WIP)** is to provide one for learners to use.
+
+Some samples of successful pipeline runs can be found below.
+
+![Validation_Success](readme_links/Latest_Successful_Validation_Pipeline_Run.png)
+
+![Transformation_Success](readme_links/Latest_Successful_Transformation_Pipeline_Run.png)
+
+
+
+## Summary
+In total, the project currently pulls data from 4 different sources (2 JSON, 2 APIs), uses joins where necessary, and collates them into a single dataset. Azure Synapse Analytics was used as the tech stack, which is an all-in-one tool that functions as a workspace for data engineering and analytics. In it, SQL pools are provisioned to cache the data in flow. Pipelines are triggered to ensure the runs were successful.
+
+Futures are to implement more datasets, scrape the data from more reliable websites, orchestrate pipelines to call the API to avoid the rate limit, and eventually ingest the data for data anaytics. This has been a stellar journey so far, and with the data engineering skills I've gained, I feel that I've unblocked many of the barriers I have faced as a data scientist.
