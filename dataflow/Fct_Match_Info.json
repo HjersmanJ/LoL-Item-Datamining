@@ -1,0 +1,103 @@
+{
+	"name": "Fct_Match_Info",
+	"properties": {
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"dataset": {
+						"referenceName": "Fct_Match_Data",
+						"type": "DatasetReference"
+					},
+					"name": "FctMatchData"
+				}
+			],
+			"sinks": [
+				{
+					"name": "FctMatchValidation"
+				}
+			],
+			"transformations": [
+				{
+					"name": "CastToInteger",
+					"description": "Certain columns should be integer. This ensures that they are."
+				},
+				{
+					"name": "CastBools",
+					"description": "Certain columns that are booleans should be cast as such."
+				},
+				{
+					"name": "NoKeyNulls",
+					"description": "None of the entries should be Null except for sometimes items, but most importantly, the participant (puuid) section and if they won or not (a key metric). The rest being Null can function fine."
+				}
+			],
+			"scriptLines": [
+				"source(output(",
+				"          assists as string,",
+				"          championName as string,",
+				"          deaths as string,",
+				"          gameEndedInEarlySurrender as string,",
+				"          gameEndedInSurrender as string,",
+				"          goldEarned as string,",
+				"          goldSpent as string,",
+				"          item0 as string,",
+				"          item1 as string,",
+				"          item2 as string,",
+				"          item3 as string,",
+				"          item4 as string,",
+				"          item5 as string,",
+				"          item6 as string,",
+				"          kills as string,",
+				"          magicDamageDealtToChampions as string,",
+				"          magicDamageTaken as string,",
+				"          physicalDamageDealtToChampions as string,",
+				"          physicalDamageTaken as string,",
+				"          teamPosition as string,",
+				"          timePlayed as string,",
+				"          totalMinionsKilled as string,",
+				"          visionScore as string,",
+				"          win as string",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     ignoreNoFilesFound: false) ~> FctMatchData",
+				"FctMatchData cast(output(",
+				"          assists as integer '000',",
+				"          deaths as integer '000',",
+				"          goldEarned as integer,",
+				"          goldSpent as integer,",
+				"          item0 as integer,",
+				"          item1 as integer,",
+				"          item2 as integer,",
+				"          item3 as integer,",
+				"          item4 as integer,",
+				"          item5 as integer,",
+				"          item6 as integer,",
+				"          kills as integer,",
+				"          magicDamageDealtToChampions as integer,",
+				"          magicDamageTaken as integer,",
+				"          physicalDamageDealtToChampions as integer,",
+				"          physicalDamageTaken as integer,",
+				"          timePlayed as integer,",
+				"          totalMinionsKilled as integer,",
+				"          visionScore as integer",
+				"     ),",
+				"     errors: true) ~> CastToInteger",
+				"CastToInteger cast(output(",
+				"          gameEndedInEarlySurrender as boolean,",
+				"          gameEndedInSurrender as boolean,",
+				"          win as boolean",
+				"     ),",
+				"     errors: true) ~> CastBools",
+				"FctMatchData assert(expectTrue(!isNull(win), false, 'assert1')) ~> NoKeyNulls",
+				"CastBools sink(validateSchema: false,",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true,",
+				"     store: 'cache',",
+				"     format: 'inline',",
+				"     output: false,",
+				"     saveOrder: 1) ~> FctMatchValidation"
+			]
+		}
+	}
+}

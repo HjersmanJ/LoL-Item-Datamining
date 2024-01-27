@@ -1,0 +1,65 @@
+{
+	"name": "Fct_Challenger_Details_Validation",
+	"properties": {
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"dataset": {
+						"referenceName": "fctChallengerDetails",
+						"type": "DatasetReference"
+					},
+					"name": "fctChallengerDetails"
+				}
+			],
+			"sinks": [
+				{
+					"name": "Validation"
+				},
+				{
+					"name": "NullValidation"
+				}
+			],
+			"transformations": [
+				{
+					"name": "nullNames"
+				},
+				{
+					"name": "RowCount"
+				},
+				{
+					"name": "PKconstraints"
+				}
+			],
+			"scriptLines": [
+				"source(output(",
+				"          puuid as string,",
+				"          summonerName as string,",
+				"          leaguePoints as string",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     ignoreNoFilesFound: false) ~> fctChallengerDetails",
+				"fctChallengerDetails assert(expectTrue(!isNull(summonerName), false, 'assert1')) ~> nullNames",
+				"PKconstraints aggregate(groupBy(puuid),",
+				"     row_count = count(1)) ~> RowCount",
+				"fctChallengerDetails aggregate(groupBy(puuid),",
+				"     each(match(name!='puuid'), $$ = first($$))) ~> PKconstraints",
+				"RowCount sink(validateSchema: false,",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true,",
+				"     store: 'cache',",
+				"     format: 'inline',",
+				"     output: false,",
+				"     saveOrder: 1) ~> Validation",
+				"nullNames sink(validateSchema: false,",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true,",
+				"     store: 'cache',",
+				"     format: 'inline',",
+				"     output: false,",
+				"     saveOrder: 1) ~> NullValidation"
+			]
+		}
+	}
+}

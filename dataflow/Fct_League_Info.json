@@ -1,0 +1,89 @@
+{
+	"name": "Fct_League_Info",
+	"properties": {
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"dataset": {
+						"referenceName": "fct_league_info",
+						"type": "DatasetReference"
+					},
+					"name": "FctLeagueInfo"
+				}
+			],
+			"sinks": [
+				{
+					"name": "ChallengerInfoValidation"
+				}
+			],
+			"transformations": [
+				{
+					"name": "nullNames"
+				},
+				{
+					"name": "RowCount"
+				},
+				{
+					"name": "ChallengerMinimumLeaguePoints",
+					"description": "Challenger League require at least 300 league points. If there are less, then they are erroneously in Challenger."
+				},
+				{
+					"name": "CastLeaguePointsToInteger",
+					"description": "League Points are incoming as a string. They need to be converted to an integer. Job will fail if there is an incompatible entry."
+				},
+				{
+					"name": "JoinDataset"
+				},
+				{
+					"name": "RemoveDuplicateKey",
+					"description": "'puuid' was duplicated for some reason. This is to take care of that issue."
+				},
+				{
+					"name": "OrderByLeaguePointsDesc",
+					"description": "Highest league point players will tend to be searched more. This orders it by the most popular."
+				}
+			],
+			"scriptLines": [
+				"source(output(",
+				"          puuid as string,",
+				"          summonerName as string,",
+				"          leaguePoints as string",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     ignoreNoFilesFound: false) ~> FctLeagueInfo",
+				"FctLeagueInfo assert(expectTrue(!isNull(puuid), false, 'assert1'),",
+				"     expectTrue(!isNull(summonerName), false, 'assert2')) ~> nullNames",
+				"nullNames aggregate(groupBy(puuid),",
+				"     row_count = count(1)) ~> RowCount",
+				"CastLeaguePointsToInteger assert(expectTrue(leaguePoints>=300, false, 'assert1')) ~> ChallengerMinimumLeaguePoints",
+				"FctLeagueInfo cast(output(",
+				"          leaguePoints as integer '000'",
+				"     ),",
+				"     errors: true) ~> CastLeaguePointsToInteger",
+				"ChallengerMinimumLeaguePoints, RowCount join(FctLeagueInfo@puuid == RowCount@puuid,",
+				"     joinType:'left',",
+				"     matchType:'exact',",
+				"     ignoreSpaces: false,",
+				"     broadcast: 'auto')~> JoinDataset",
+				"JoinDataset select(mapColumn(",
+				"          puuid = FctLeagueInfo@puuid,",
+				"          summonerName,",
+				"          leaguePoints",
+				"     ),",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> RemoveDuplicateKey",
+				"RemoveDuplicateKey rank(desc(leaguePoints, true),",
+				"     output(puuid as long)) ~> OrderByLeaguePointsDesc",
+				"OrderByLeaguePointsDesc sink(validateSchema: false,",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true,",
+				"     store: 'cache',",
+				"     format: 'inline',",
+				"     output: false,",
+				"     saveOrder: 1) ~> ChallengerInfoValidation"
+			]
+		}
+	}
+}

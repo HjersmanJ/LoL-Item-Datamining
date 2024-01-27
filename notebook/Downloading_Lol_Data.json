@@ -1,0 +1,404 @@
+{
+	"name": "Downloading_Lol_Data",
+	"properties": {
+		"nbformat": 4,
+		"nbformat_minor": 2,
+		"sessionProperties": {
+			"driverMemory": "28g",
+			"driverCores": 4,
+			"executorMemory": "28g",
+			"executorCores": 4,
+			"numExecutors": 2,
+			"runAsWorkspaceSystemIdentity": false,
+			"conf": {
+				"spark.dynamicAllocation.enabled": "false",
+				"spark.dynamicAllocation.minExecutors": "2",
+				"spark.dynamicAllocation.maxExecutors": "2",
+				"spark.autotune.trackingId": "9c0bf79b-7e88-4ee7-863f-702e609ada07"
+			}
+		},
+		"metadata": {
+			"saveOutput": true,
+			"synapse_widget": {
+				"version": "0.1"
+			},
+			"enableDebugMode": false,
+			"kernelspec": {
+				"name": "synapse_pyspark",
+				"display_name": "python"
+			},
+			"language_info": {
+				"name": "python"
+			},
+			"sessionKeepAliveTimeout": 30
+		},
+		"cells": [
+			{
+				"cell_type": "code",
+				"source": [
+					"import requests\n",
+					"import json\n",
+					"import pandas as pd\n",
+					"import time"
+				],
+				"execution_count": 98
+			},
+			{
+				"cell_type": "markdown",
+				"source": [
+					"Before we begin, we must start with legal boilerplate required by Riot Games:\n",
+					"\n",
+					">[Your Product Name] is not endorsed by Riot Games and does not reflect the views or opinions of Riot Games or anyone officially involved in producing or managing Riot Games properties. Riot Games and all associated properties are trademarks or registered trademarks of Riot Games, Inc"
+				]
+			},
+			{
+				"cell_type": "code",
+				"source": [
+					"api_key = 'RGAPI-aa45a81e-4fe2-4bac-bf7a-d3227702d56e'"
+				],
+				"execution_count": 2
+			},
+			{
+				"cell_type": "code",
+				"source": [
+					"item_url = 'https://ddragon.leagueoflegends.com/cdn/14.2.1/data/en_US/item.json'\n",
+					"r = requests.get(item_url)\n",
+					"item_data = r.json()\n",
+					"print(item_data)"
+				],
+				"execution_count": 4
+			},
+			{
+				"cell_type": "code",
+				"source": [
+					"item_temp_list_2 = []\n",
+					"\n",
+					"for item in item_data['data']:\n",
+					"    item_temp_list_1 = []\n",
+					"    item_temp_list_1.append(item)\n",
+					"    item_temp_list_1.append(item_data['data'][item]['name'])\n",
+					"    item_temp_list_2.append(item_temp_list_1)\n",
+					"\n",
+					"print(item_temp_list_2)"
+				],
+				"execution_count": 42
+			},
+			{
+				"cell_type": "markdown",
+				"source": [
+					"Source to grow lists then add to dataframe: https://stackoverflow.com/questions/13784192/creating-an-empty-pandas-dataframe-and-then-filling-it"
+				]
+			},
+			{
+				"cell_type": "code",
+				"source": [
+					"item_details = pd.DataFrame(item_temp_list_2)\n",
+					"item_details.rename(columns={0: \"id\", 1: \"name\"}, inplace=True)\n",
+					"item_details"
+				],
+				"execution_count": 49
+			},
+			{
+				"cell_type": "code",
+				"source": [
+					"item_details_filepath = 'data/item_details_patch_14.1.csv'\n",
+					"item_details.to_csv(item_details_filepath, index=False)"
+				],
+				"execution_count": 105
+			},
+			{
+				"cell_type": "code",
+				"source": [
+					"champion_url = 'https://ddragon.leagueoflegends.com/cdn/14.2.1/data/en_US/champion.json'\n",
+					"r = requests.get(champion_url)\n",
+					"champion_data = r.json()\n",
+					"print(champion_data)"
+				],
+				"execution_count": 52
+			},
+			{
+				"cell_type": "code",
+				"source": [
+					"champ_temp_list_2 = []\n",
+					"\n",
+					"for champion in champion_data['data']:\n",
+					"    champ_temp_list_1 = []\n",
+					"    champ_temp_list_1.append(champion_data['data'][champion]['key'])\n",
+					"    champ_temp_list_1.append(champion_data['data'][champion]['name'])\n",
+					"    champ_temp_list_1.append(champion_data['data'][champion]['tags'])\n",
+					"    champ_temp_list_2.append(champ_temp_list_1)\n",
+					"\n",
+					"print(champ_temp_list_2)"
+				],
+				"execution_count": 70
+			},
+			{
+				"cell_type": "code",
+				"source": [
+					"champion_details = pd.DataFrame(champ_temp_list_2)\n",
+					"champion_details.rename(columns={0: \"id\", 1: \"name\", 2: \"tags\"}, inplace=True)\n",
+					"champion_details"
+				],
+				"execution_count": 71
+			},
+			{
+				"cell_type": "code",
+				"source": [
+					"champion_details_filepath = 'data/champion_details_patch_14.1.csv'\n",
+					"champion_details.to_csv(champion_details_filepath, index=False)"
+				],
+				"execution_count": 106
+			},
+			{
+				"cell_type": "code",
+				"source": [
+					"challenger_queue_url = 'https://na1.api.riotgames.com/lol/league/v4/challengerleagues/by-queue/RANKED_SOLO_5x5?api_key=' + api_key\n",
+					"r = requests.get(challenger_queue_url)\n",
+					"challenger_data = r.json()\n",
+					"print(challenger_data)"
+				],
+				"execution_count": 72
+			},
+			{
+				"cell_type": "code",
+				"source": [
+					"challenger_temp_list_2 = []\n",
+					"\n",
+					"for challenger in challenger_data['entries']:\n",
+					"    challenger_temp_list_1 = []\n",
+					"    challenger_temp_list_1.append(challenger['summonerId'])\n",
+					"    challenger_temp_list_1.append(challenger['summonerName'])\n",
+					"    challenger_temp_list_1.append(challenger['leaguePoints'])\n",
+					"    challenger_temp_list_2.append(challenger_temp_list_1)\n",
+					"\n",
+					"print(challenger_temp_list_2)"
+				],
+				"execution_count": 77
+			},
+			{
+				"cell_type": "code",
+				"source": [
+					"challenger_details = pd.DataFrame(challenger_temp_list_2)\n",
+					"challenger_details.rename(columns={0: \"summonerId\", 1: \"summonerName\", 2: \"leaguePoints\"}, inplace=True)\n",
+					"challenger_details"
+				],
+				"execution_count": 78
+			},
+			{
+				"cell_type": "markdown",
+				"source": [
+					"We have a *NULL* on summonerID 'baaP8_5bWcItUxuBN6oGB4KXQiAv9iYmuXxGgRRmcBRACHc'. My suspicion is that they are using foreign characters that cannot be recognized. Even the native Riot API turns up a blank summonerName, making this difficult to diagnose. There are methods, but the best way is to simply circumvent using summonerName and opt for summonerId.\n",
+					"\n",
+					"Regardless, Riot has deprecated many of their endpoints off of using summonerID. We must convert the summonerId to the currently used parameter: puuid.\n",
+					"\n",
+					"To do that, we must go through the summoner-v4 endpoint. However, due to the request limit, this will take a large amount of time when we deal with big data. The request limit is as follows...\n",
+					"> The rate limit for a personal keys is by design very limited:\n",
+					"  > - 20 requests every 1 second\n",
+					"  > - 100 requests every 2 minutes\n",
+					"\n",
+					"A sleep function will suffice to ensure the limit is not hit. Can run this in one's sleep and transcribe somewhere north of 15k accounts in that time assuming no errors. In the future, the more proper way to do this is through frequent orchestration to minimize errors."
+				]
+			},
+			{
+				"cell_type": "code",
+				"source": [
+					"for index, row in challenger_details.iterrows():\n",
+					"    current_summoner = row['summonerId']\n",
+					"    summoner_url = 'https://na1.api.riotgames.com/lol/summoner/v4/summoners/' + current_summoner  + '?' + 'api_key=' + api_key\n",
+					"    r = requests.get(summoner_url)\n",
+					"    summoner_data = r.json()\n",
+					"    challenger_details.replace(current_summoner, summoner_data['puuid'], inplace=True)\n",
+					"    time.sleep(3)\n",
+					"\n",
+					"challenger_details.head()"
+				],
+				"execution_count": 93
+			},
+			{
+				"cell_type": "markdown",
+				"source": [
+					"That should work. Now to rename it to the proper field."
+				]
+			},
+			{
+				"cell_type": "code",
+				"source": [
+					"challenger_details.rename(columns={\"summonerId\": \"puuid\"}, inplace=True)\n",
+					"challenger_details.head()"
+				],
+				"execution_count": 95
+			},
+			{
+				"cell_type": "code",
+				"source": [
+					"for i in range(5):\n",
+					"    print(challenger_details.iloc[i]['puuid'])"
+				],
+				"execution_count": 148
+			},
+			{
+				"cell_type": "code",
+				"source": [
+					"challenger_details_filepath = 'data/challenger_details_patch_14.1.csv'\n",
+					"challenger_details.to_csv(challenger_details_filepath, index=False)"
+				],
+				"execution_count": 107
+			},
+			{
+				"cell_type": "markdown",
+				"source": [
+					"Now for the last one: the matches. The process will start the same as the previous methods. We will go with the default of grabbing the most recent 20 matches in ranked 5v5 solo queue (queue id = 420). A future is to integrate the Queue API to search by different queues (e.g. ARAM, Rotating Game Modes, etc.)."
+				]
+			},
+			{
+				"cell_type": "code",
+				"source": [
+					"def challenger_matchlist(current_puuid):\n",
+					"    challenger_matchlist_url = 'https://americas.api.riotgames.com/lol/match/v5/matches/by-puuid/' + current_puuid + '/ids?queue=420&start=0&count=20&api_key=' + api_key\n",
+					"    r = requests.get(challenger_matchlist_url)\n",
+					"    matchlist_data = r.json()\n",
+					"    print(matchlist_data)\n",
+					"    return matchlist_data"
+				],
+				"execution_count": 132
+			},
+			{
+				"cell_type": "code",
+				"source": [
+					"def grab_match_data(current_match):\n",
+					"    #current_match = 'NA1_4900084850'\n",
+					"    match_url = 'https://americas.api.riotgames.com/lol/match/v5/matches/' + current_match + '?api_key=' + api_key\n",
+					"    r = requests.get(match_url)\n",
+					"    match_data = r.json()\n",
+					"    print(match_data)\n",
+					"    return match_data"
+				],
+				"execution_count": 133
+			},
+			{
+				"cell_type": "code",
+				"source": [
+					"def find_player(match_data, puuid):\n",
+					"    participant_list = match_data['metadata']['participants']\n",
+					"    player_index = participant_list.index(puuid)\n",
+					"    player_info = match_data['info']['participants'][player_index]\n",
+					"    return player_info"
+				],
+				"execution_count": 117
+			},
+			{
+				"cell_type": "markdown",
+				"source": [
+					"Due to contraints on API requests and time, this notebook will for now function off of a single puuid. A future is to iterate through the entire list of puuids to jumpstart the big data process."
+				]
+			},
+			{
+				"cell_type": "code",
+				"source": [
+					""
+				],
+				"execution_count": 127
+			},
+			{
+				"cell_type": "code",
+				"source": [
+					""
+				]
+			},
+			{
+				"cell_type": "code",
+				"source": [
+					"match_data_kept = {\n",
+					"    'assists': [],\n",
+					"    'championName': [],\n",
+					"    'deaths': [],\n",
+					"    'gameEndedInEarlySurrender': [],\n",
+					"    'gameEndedInSurrender': [],\n",
+					"    'goldEarned': [],\n",
+					"    'goldSpent': [],\n",
+					"    'item0': [],\n",
+					"    'item1': [],\n",
+					"    'item2': [],\n",
+					"    'item3': [],\n",
+					"    'item4': [],\n",
+					"    'item5': [],\n",
+					"    'item6': [],\n",
+					"    'kills': [],\n",
+					"    'magicDamageDealtToChampions': [],\n",
+					"    'magicDamageTaken': [],\n",
+					"    'physicalDamageDealtToChampions': [],\n",
+					"    'physicalDamageTaken': [],\n",
+					"    'teamPosition': [],\n",
+					"    'timePlayed': [],\n",
+					"    'totalMinionsKilled': [],\n",
+					"    'visionScore': [],\n",
+					"    'win': []\n",
+					"}"
+				],
+				"execution_count": 136
+			},
+			{
+				"cell_type": "code",
+				"source": [
+					"def assign_match_data_values(current_match_data):\n",
+					"    match_data_kept['assists'].append(current_match_data['assists'])\n",
+					"    match_data_kept['championName'].append(current_match_data['championName'])\n",
+					"    match_data_kept['deaths'].append(current_match_data['deaths'])\n",
+					"    match_data_kept['gameEndedInEarlySurrender'].append(current_match_data['gameEndedInEarlySurrender'])\n",
+					"    match_data_kept['gameEndedInSurrender'].append(current_match_data['gameEndedInSurrender'])\n",
+					"    match_data_kept['goldEarned'].append(current_match_data['goldEarned'])\n",
+					"    match_data_kept['goldSpent'].append(current_match_data['goldSpent'])\n",
+					"                                        \n",
+					"    match_data_kept['item0'].append(current_match_data['item0'])\n",
+					"    match_data_kept['item1'].append(current_match_data['item1'])\n",
+					"    match_data_kept['item2'].append(current_match_data['item2'])\n",
+					"    match_data_kept['item3'].append(current_match_data['item3'])\n",
+					"    match_data_kept['item4'].append(current_match_data['item4'])\n",
+					"    match_data_kept['item5'].append(current_match_data['item5'])\n",
+					"    match_data_kept['item6'].append(current_match_data['item6'])\n",
+					"                                    \n",
+					"    match_data_kept['kills'].append(current_match_data['kills'])\n",
+					"    match_data_kept['magicDamageDealtToChampions'].append(current_match_data['magicDamageDealtToChampions'])\n",
+					"    match_data_kept['magicDamageTaken'].append(current_match_data['magicDamageTaken'])\n",
+					"    match_data_kept['physicalDamageDealtToChampions'].append(current_match_data['physicalDamageDealtToChampions'])\n",
+					"    match_data_kept['physicalDamageTaken'].append(current_match_data['physicalDamageTaken'])\n",
+					"    match_data_kept['teamPosition'].append(current_match_data['teamPosition'])\n",
+					"    match_data_kept['timePlayed'].append(current_match_data['timePlayed'])\n",
+					"    match_data_kept['totalMinionsKilled'].append(current_match_data['totalMinionsKilled'])\n",
+					"    match_data_kept['visionScore'].append(current_match_data['visionScore'])\n",
+					"    match_data_kept['win'].append(current_match_data['win'])"
+				],
+				"execution_count": 130
+			},
+			{
+				"cell_type": "code",
+				"source": [
+					"\n",
+					"for i in range(15, 18):\n",
+					"    puuid = challenger_details.iloc[i]['puuid']\n",
+					"    matchlist = challenger_matchlist(puuid)\n",
+					"    for j in range(20):\n",
+					"        match_data = grab_match_data(matchlist[j])\n",
+					"        player_data = find_player(match_data, puuid)\n",
+					"        assign_match_data_values(player_data)"
+				],
+				"execution_count": 153
+			},
+			{
+				"cell_type": "code",
+				"source": [
+					"match_data_kept"
+				],
+				"execution_count": 150
+			},
+			{
+				"cell_type": "code",
+				"source": [
+					"match_dataframe = pd.DataFrame(match_data_kept)\n",
+					"match_dataframe"
+				],
+				"execution_count": 151
+			}
+		]
+	}
+}
