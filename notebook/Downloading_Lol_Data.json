@@ -9,19 +9,15 @@
 			"executorMemory": "28g",
 			"executorCores": 4,
 			"numExecutors": 2,
-			"runAsWorkspaceSystemIdentity": false,
 			"conf": {
 				"spark.dynamicAllocation.enabled": "false",
 				"spark.dynamicAllocation.minExecutors": "2",
 				"spark.dynamicAllocation.maxExecutors": "2",
-				"spark.autotune.trackingId": "9c0bf79b-7e88-4ee7-863f-702e609ada07"
+				"spark.autotune.trackingId": "e2388c53-efd1-4f29-ac83-308a024cbba1"
 			}
 		},
 		"metadata": {
 			"saveOutput": true,
-			"synapse_widget": {
-				"version": "0.1"
-			},
 			"enableDebugMode": false,
 			"kernelspec": {
 				"name": "synapse_pyspark",
@@ -41,32 +37,41 @@
 					"import pandas as pd\n",
 					"import time"
 				],
-				"execution_count": 98
+				"execution_count": 1
 			},
 			{
 				"cell_type": "markdown",
 				"source": [
 					"Before we begin, we must start with legal boilerplate required by Riot Games:\n",
 					"\n",
-					">[Your Product Name] is not endorsed by Riot Games and does not reflect the views or opinions of Riot Games or anyone officially involved in producing or managing Riot Games properties. Riot Games and all associated properties are trademarks or registered trademarks of Riot Games, Inc"
+					">HjersmanJ's LoL Datamining project is not endorsed by Riot Games and does not reflect the views or opinions of Riot Games or anyone officially involved in producing or managing Riot Games properties. Riot Games and all associated properties are trademarks or registered trademarks of Riot Games, Inc"
 				]
 			},
 			{
 				"cell_type": "code",
 				"source": [
-					"api_key = 'RGAPI-aa45a81e-4fe2-4bac-bf7a-d3227702d56e'"
+					"api_key = ''"
 				],
 				"execution_count": 2
 			},
 			{
 				"cell_type": "code",
 				"source": [
-					"item_url = 'https://ddragon.leagueoflegends.com/cdn/14.2.1/data/en_US/item.json'\n",
-					"r = requests.get(item_url)\n",
-					"item_data = r.json()\n",
-					"print(item_data)"
+					"def requesting_data(current_url):\n",
+					"    r = requests.get(current_url)\n",
+					"    current_container = r.json()\n",
+					"    print(current_container)\n",
+					"    return current_container"
 				],
 				"execution_count": 4
+			},
+			{
+				"cell_type": "code",
+				"source": [
+					"item_url = 'https://ddragon.leagueoflegends.com/cdn/14.2.1/data/en_US/item.json'\n",
+					"item_data = requesting_data(item_url)"
+				],
+				"execution_count": 5
 			},
 			{
 				"cell_type": "code",
@@ -110,11 +115,9 @@
 				"cell_type": "code",
 				"source": [
 					"champion_url = 'https://ddragon.leagueoflegends.com/cdn/14.2.1/data/en_US/champion.json'\n",
-					"r = requests.get(champion_url)\n",
-					"champion_data = r.json()\n",
-					"print(champion_data)"
+					"champion_data = requesting_data(champion_url)"
 				],
-				"execution_count": 52
+				"execution_count": 6
 			},
 			{
 				"cell_type": "code",
@@ -130,16 +133,16 @@
 					"\n",
 					"print(champ_temp_list_2)"
 				],
-				"execution_count": 70
+				"execution_count": 8
 			},
 			{
 				"cell_type": "code",
 				"source": [
 					"champion_details = pd.DataFrame(champ_temp_list_2)\n",
 					"champion_details.rename(columns={0: \"id\", 1: \"name\", 2: \"tags\"}, inplace=True)\n",
-					"champion_details"
+					"champion_details['tags'].isnull()"
 				],
-				"execution_count": 71
+				"execution_count": 10
 			},
 			{
 				"cell_type": "code",
@@ -153,9 +156,7 @@
 				"cell_type": "code",
 				"source": [
 					"challenger_queue_url = 'https://na1.api.riotgames.com/lol/league/v4/challengerleagues/by-queue/RANKED_SOLO_5x5?api_key=' + api_key\n",
-					"r = requests.get(challenger_queue_url)\n",
-					"challenger_data = r.json()\n",
-					"print(challenger_data)"
+					"challenger_data = requesting_data(challenger_queue_url)"
 				],
 				"execution_count": 72
 			},
@@ -205,8 +206,7 @@
 					"for index, row in challenger_details.iterrows():\n",
 					"    current_summoner = row['summonerId']\n",
 					"    summoner_url = 'https://na1.api.riotgames.com/lol/summoner/v4/summoners/' + current_summoner  + '?' + 'api_key=' + api_key\n",
-					"    r = requests.get(summoner_url)\n",
-					"    summoner_data = r.json()\n",
+					"    summoner_data = requesting_data(summoner_url)\n",
 					"    challenger_details.replace(current_summoner, summoner_data['puuid'], inplace=True)\n",
 					"    time.sleep(3)\n",
 					"\n",
@@ -227,14 +227,6 @@
 					"challenger_details.head()"
 				],
 				"execution_count": 95
-			},
-			{
-				"cell_type": "code",
-				"source": [
-					"for i in range(5):\n",
-					"    print(challenger_details.iloc[i]['puuid'])"
-				],
-				"execution_count": 148
 			},
 			{
 				"cell_type": "code",
@@ -290,19 +282,6 @@
 				"cell_type": "markdown",
 				"source": [
 					"Due to contraints on API requests and time, this notebook will for now function off of a single puuid. A future is to iterate through the entire list of puuids to jumpstart the big data process."
-				]
-			},
-			{
-				"cell_type": "code",
-				"source": [
-					""
-				],
-				"execution_count": 127
-			},
-			{
-				"cell_type": "code",
-				"source": [
-					""
 				]
 			},
 			{
@@ -378,7 +357,8 @@
 					"    puuid = challenger_details.iloc[i]['puuid']\n",
 					"    matchlist = challenger_matchlist(puuid)\n",
 					"    for j in range(20):\n",
-					"        match_data = grab_match_data(matchlist[j])\n",
+					"        match_url = 'https://americas.api.riotgames.com/lol/match/v5/matches/' + matchlist[j] + '?api_key=' + api_key\n",
+					"        match_data = requesting_data(match_url)\n",
 					"        player_data = find_player(match_data, puuid)\n",
 					"        assign_match_data_values(player_data)"
 				],
