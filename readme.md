@@ -1,6 +1,5 @@
 # League of Legends Data Mining Project
 
-## Note to Grader: This project is still a WIP but currently satisfies the requirements of the capstone (with some standout characteristics). However, this project was far bigger than expected, but I am passionate to complete it. I intend to improve on this dataset in the coming weeks and eventually data mine this using my data science skills. Once that is complete, the GitHub will be made public. 
 
 # Overview
 The  final requirement to fulfill my desired certification level with EcZachly's Data Engineering Bootcamp is an engineered dataset from raw sources into a polished dataset using modern technologies. Despite that being the case of how this project started, the intent is to use this as a chance to perform data science on League of Legends. The focus of this project is to investigate the items in League of Legends, their performance, and metrics on what makes a good item and some assistance to discover interesting builds, both crowdsourced as it is today and certain unseen builds that might be worth a try.
