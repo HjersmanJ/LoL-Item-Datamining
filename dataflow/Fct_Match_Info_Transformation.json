@@ -1,0 +1,120 @@
+{
+	"name": "Fct_Match_Info_Transformation",
+	"properties": {
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"dataset": {
+						"referenceName": "Fct_Match_Data",
+						"type": "DatasetReference"
+					},
+					"name": "FctMatchData"
+				},
+				{
+					"dataset": {
+						"referenceName": "dim_item_info",
+						"type": "DatasetReference"
+					},
+					"name": "DimItemDetails"
+				}
+			],
+			"sinks": [
+				{
+					"dataset": {
+						"referenceName": "Match_Data_Transformed",
+						"type": "DatasetReference"
+					},
+					"name": "TransformedMatchData"
+				}
+			],
+			"transformations": [
+				{
+					"name": "ReplaceNumericItemsToStrings"
+				}
+			],
+			"scriptLines": [
+				"source(output(",
+				"          assists as integer,",
+				"          championName as string,",
+				"          deaths as integer,",
+				"          gameEndedInEarlySurrender as boolean,",
+				"          gameEndedInSurrender as boolean,",
+				"          goldEarned as integer,",
+				"          goldSpent as integer,",
+				"          item0 as integer,",
+				"          item1 as integer,",
+				"          item2 as integer,",
+				"          item3 as integer,",
+				"          item4 as integer,",
+				"          item5 as integer,",
+				"          item6 as integer,",
+				"          kills as integer,",
+				"          magicDamageDealtToChampions as integer,",
+				"          magicDamageTaken as integer,",
+				"          physicalDamageDealtToChampions as integer,",
+				"          physicalDamageTaken as integer,",
+				"          teamPosition as string,",
+				"          timePlayed as integer,",
+				"          totalMinionsKilled as integer,",
+				"          visionScore as integer,",
+				"          win as boolean",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     ignoreNoFilesFound: false) ~> FctMatchData",
+				"source(output(",
+				"          id as integer,",
+				"          name as string",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     ignoreNoFilesFound: false) ~> DimItemDetails",
+				"FctMatchData, DimItemDetails join(item0 == id",
+				"     && item1 == id",
+				"     && item2 == id",
+				"     && item3 == id",
+				"     && item4 == id",
+				"     && item5 == id",
+				"     && item6 == id,",
+				"     joinType:'left',",
+				"     matchType:'exact',",
+				"     ignoreSpaces: false,",
+				"     broadcast: 'auto')~> ReplaceNumericItemsToStrings",
+				"ReplaceNumericItemsToStrings sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     input(",
+				"          assists as string,",
+				"          championName as string,",
+				"          deaths as string,",
+				"          gameEndedInEarlySurrender as string,",
+				"          gameEndedInSurrender as string,",
+				"          goldEarned as string,",
+				"          goldSpent as string,",
+				"          item0 as string,",
+				"          item1 as string,",
+				"          item2 as string,",
+				"          item3 as string,",
+				"          item4 as string,",
+				"          item5 as string,",
+				"          item6 as string,",
+				"          kills as string,",
+				"          magicDamageDealtToChampions as string,",
+				"          magicDamageTaken as string,",
+				"          physicalDamageDealtToChampions as string,",
+				"          physicalDamageTaken as string,",
+				"          teamPosition as string,",
+				"          timePlayed as string,",
+				"          totalMinionsKilled as string,",
+				"          visionScore as string,",
+				"          win as string",
+				"     ),",
+				"     umask: 0022,",
+				"     preCommands: [],",
+				"     postCommands: [],",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> TransformedMatchData"
+			]
+		}
+	}
+}

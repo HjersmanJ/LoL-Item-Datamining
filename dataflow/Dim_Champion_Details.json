@@ -1,0 +1,57 @@
+{
+	"name": "Dim_Champion_Details",
+	"properties": {
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"dataset": {
+						"referenceName": "dim_champion_details",
+						"type": "DatasetReference"
+					},
+					"name": "DimChampionDetails"
+				}
+			],
+			"sinks": [
+				{
+					"name": "ChampionValidation"
+				}
+			],
+			"transformations": [
+				{
+					"name": "NoNullTags",
+					"description": "Each champion has at least one classification which is aliased as \"tags\". If it is empty, then they are essentially a champion without a class, which is an error."
+				},
+				{
+					"name": "RowCount",
+					"description": "Sanity check to count rows."
+				},
+				{
+					"name": "Confirm167Champions",
+					"description": "There are currently 167 champions in League. Pipeline will fail if it does not equal this number. If it is one less, then a new champ was likely released. Smolder is set to be released within a few days, so this pipeline should fail at that time."
+				}
+			],
+			"scriptLines": [
+				"source(output(",
+				"          id as string,",
+				"          name as string,",
+				"          tags as string",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     ignoreNoFilesFound: false) ~> DimChampionDetails",
+				"DimChampionDetails assert(expectTrue(!isNull(tags), false, 'assert1')) ~> NoNullTags",
+				"NoNullTags aggregate(groupBy(id),",
+				"     row_count = count(1)) ~> RowCount",
+				"RowCount assert(expectTrue(row_count == 167, false, 'assert1')) ~> Confirm167Champions",
+				"Confirm167Champions sink(validateSchema: false,",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true,",
+				"     store: 'cache',",
+				"     format: 'inline',",
+				"     output: false,",
+				"     saveOrder: 1) ~> ChampionValidation"
+			]
+		}
+	}
+}
