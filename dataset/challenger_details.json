@@ -10,8 +10,8 @@
 		"typeProperties": {
 			"location": {
 				"type": "AzureBlobFSLocation",
-				"fileName": "challenger_details_patch_14.1.csv",
-				"folderPath": "lol_item_data",
+				"fileName": "challenger_details.csv",
+				"folderPath": "lol-item-data",
 				"fileSystem": "lolitemfs"
 			},
 			"columnDelimiter": ",",
