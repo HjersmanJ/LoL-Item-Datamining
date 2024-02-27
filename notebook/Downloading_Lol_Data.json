@@ -18,7 +18,7 @@
 				"spark.dynamicAllocation.enabled": "false",
 				"spark.dynamicAllocation.minExecutors": "2",
 				"spark.dynamicAllocation.maxExecutors": "2",
-				"spark.autotune.trackingId": "56e8e090-7693-45ef-b868-2026c62905f5"
+				"spark.autotune.trackingId": "04b005f6-e0c5-431e-bdae-8a7820405d1c"
 			}
 		},
 		"metadata": {
@@ -57,7 +57,7 @@
 					"import pandas as pd\n",
 					"import time"
 				],
-				"execution_count": 15
+				"execution_count": 55
 			},
 			{
 				"cell_type": "markdown",
@@ -71,22 +71,32 @@
 				"cell_type": "code",
 				"source": [
 					"api_key = 'RGAPI-623b77f2-5dd7-4278-9ec3-e43ec904637c'\r\n",
-					"patch_number = '14.2.1'"
+					"patch_number = '14.4.1'"
 				],
-				"execution_count": 23
+				"execution_count": 56
 			},
 			{
 				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"outputs_hidden": true
+					}
+				},
 				"source": [
 					"item_url = f'https://ddragon.leagueoflegends.com/cdn/{patch_number}/data/en_US/item.json'\n",
 					"r = requests.get(item_url)\n",
 					"item_data = r.json()\n",
 					"print(item_data)"
 				],
-				"execution_count": 24
+				"execution_count": 57
 			},
 			{
 				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"outputs_hidden": true
+					}
+				},
 				"source": [
 					"item_temp_list_2 = []\n",
 					"\n",
@@ -98,7 +108,7 @@
 					"\n",
 					"print(item_temp_list_2)"
 				],
-				"execution_count": 25
+				"execution_count": 58
 			},
 			{
 				"cell_type": "markdown",
@@ -113,52 +123,38 @@
 					"item_details.rename(columns={0: \"id\", 1: \"name\"}, inplace=True)\n",
 					"item_details.head()"
 				],
-				"execution_count": 26
+				"execution_count": 59
+			},
+			{
+				"cell_type": "code",
+				"source": [
+					"item_details_filepath = f'abfss://lolitemfs@lolitemstorage2.dfs.core.windows.net/lol-data/item_details_patch_{patch_number}.csv'\n",
+					"item_details.to_csv(item_details_filepath, index=False)"
+				],
+				"execution_count": 60
 			},
 			{
 				"cell_type": "code",
 				"metadata": {
 					"jupyter": {
-						"source_hidden": false,
-						"outputs_hidden": false
-					},
-					"nteract": {
-						"transient": {
-							"deleting": false
-						}
+						"outputs_hidden": true
 					}
 				},
 				"source": [
-					"import os\r\n",
-					"\r\n",
-					"# get the current working directory\r\n",
-					"current_working_directory = os.getcwd()\r\n",
-					"\r\n",
-					"# print output to the console\r\n",
-					"print(current_working_directory)"
-				],
-				"execution_count": 28
-			},
-			{
-				"cell_type": "code",
-				"source": [
-					"item_details_filepath = f'data/item_details_patch_{patch_number}.csv'\n",
-					"item_details.to_csv(item_details_filepath, index=False)"
-				],
-				"execution_count": 27
-			},
-			{
-				"cell_type": "code",
-				"source": [
-					"champion_url = 'https://ddragon.leagueoflegends.com/cdn/14.2.1/data/en_US/champion.json'\n",
+					"champion_url = f'https://ddragon.leagueoflegends.com/cdn/{patch_number}/data/en_US/champion.json'\n",
 					"r = requests.get(champion_url)\n",
 					"champion_data = r.json()\n",
 					"print(champion_data)"
 				],
-				"execution_count": 52
+				"execution_count": 61
 			},
 			{
 				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"outputs_hidden": true
+					}
+				},
 				"source": [
 					"champ_temp_list_2 = []\n",
 					"\n",
@@ -171,37 +167,52 @@
 					"\n",
 					"print(champ_temp_list_2)"
 				],
-				"execution_count": 70
+				"execution_count": 62
 			},
 			{
 				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"outputs_hidden": true
+					}
+				},
 				"source": [
 					"champion_details = pd.DataFrame(champ_temp_list_2)\n",
 					"champion_details.rename(columns={0: \"id\", 1: \"name\", 2: \"tags\"}, inplace=True)\n",
 					"champion_details"
 				],
-				"execution_count": 71
+				"execution_count": 63
 			},
 			{
 				"cell_type": "code",
 				"source": [
-					"champion_details_filepath = 'data/champion_details_patch_14.1.csv'\n",
+					"champion_details_filepath = f'abfss://lolitemfs@lolitemstorage2.dfs.core.windows.net/lol-data/champion_details_patch_{patch_number}.csv'\n",
 					"champion_details.to_csv(champion_details_filepath, index=False)"
 				],
-				"execution_count": 106
+				"execution_count": 64
 			},
 			{
 				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"outputs_hidden": true
+					}
+				},
 				"source": [
 					"challenger_queue_url = 'https://na1.api.riotgames.com/lol/league/v4/challengerleagues/by-queue/RANKED_SOLO_5x5?api_key=' + api_key\n",
 					"r = requests.get(challenger_queue_url)\n",
 					"challenger_data = r.json()\n",
 					"print(challenger_data)"
 				],
-				"execution_count": 72
+				"execution_count": 65
 			},
 			{
 				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"outputs_hidden": true
+					}
+				},
 				"source": [
 					"challenger_temp_list_2 = []\n",
 					"\n",
@@ -214,16 +225,21 @@
 					"\n",
 					"print(challenger_temp_list_2)"
 				],
-				"execution_count": 77
+				"execution_count": 66
 			},
 			{
 				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"outputs_hidden": false
+					}
+				},
 				"source": [
 					"challenger_details = pd.DataFrame(challenger_temp_list_2)\n",
 					"challenger_details.rename(columns={0: \"summonerId\", 1: \"summonerName\", 2: \"leaguePoints\"}, inplace=True)\n",
 					"challenger_details"
 				],
-				"execution_count": 78
+				"execution_count": 67
 			},
 			{
 				"cell_type": "markdown",
@@ -253,7 +269,7 @@
 					"\n",
 					"challenger_details.head()"
 				],
-				"execution_count": 93
+				"execution_count": 68
 			},
 			{
 				"cell_type": "markdown",
@@ -267,7 +283,7 @@
 					"challenger_details.rename(columns={\"summonerId\": \"puuid\"}, inplace=True)\n",
 					"challenger_details.head()"
 				],
-				"execution_count": 95
+				"execution_count": 69
 			},
 			{
 				"cell_type": "code",
@@ -275,15 +291,15 @@
 					"for i in range(5):\n",
 					"    print(challenger_details.iloc[i]['puuid'])"
 				],
-				"execution_count": 148
+				"execution_count": 70
 			},
 			{
 				"cell_type": "code",
 				"source": [
-					"challenger_details_filepath = 'data/challenger_details_patch_14.1.csv'\n",
+					"challenger_details_filepath = f'abfss://lolitemfs@lolitemstorage2.dfs.core.windows.net/lol-data/challenger_details_patch_{patch_number}.csv'\n",
 					"challenger_details.to_csv(challenger_details_filepath, index=False)"
 				],
-				"execution_count": 107
+				"execution_count": 85
 			},
 			{
 				"cell_type": "markdown",
@@ -301,7 +317,7 @@
 					"    print(matchlist_data)\n",
 					"    return matchlist_data"
 				],
-				"execution_count": 132
+				"execution_count": 75
 			},
 			{
 				"cell_type": "code",
@@ -314,7 +330,7 @@
 					"    print(match_data)\n",
 					"    return match_data"
 				],
-				"execution_count": 133
+				"execution_count": 76
 			},
 			{
 				"cell_type": "code",
@@ -325,27 +341,13 @@
 					"    player_info = match_data['info']['participants'][player_index]\n",
 					"    return player_info"
 				],
-				"execution_count": 117
+				"execution_count": 77
 			},
 			{
 				"cell_type": "markdown",
 				"source": [
 					"Due to contraints on API requests and time, this notebook will for now function off of a single puuid. A future is to iterate through the entire list of puuids to jumpstart the big data process."
 				]
-			},
-			{
-				"cell_type": "code",
-				"source": [
-					""
-				],
-				"execution_count": 127
-			},
-			{
-				"cell_type": "code",
-				"source": [
-					""
-				],
-				"execution_count": null
 			},
 			{
 				"cell_type": "code",
@@ -377,7 +379,7 @@
 					"    'win': []\n",
 					"}"
 				],
-				"execution_count": 136
+				"execution_count": 78
 			},
 			{
 				"cell_type": "code",
@@ -410,7 +412,7 @@
 					"    match_data_kept['visionScore'].append(current_match_data['visionScore'])\n",
 					"    match_data_kept['win'].append(current_match_data['win'])"
 				],
-				"execution_count": 130
+				"execution_count": 79
 			},
 			{
 				"cell_type": "code",
@@ -424,22 +426,51 @@
 					"        player_data = find_player(match_data, puuid)\n",
 					"        assign_match_data_values(player_data)"
 				],
-				"execution_count": 153
+				"execution_count": 80
 			},
 			{
 				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"outputs_hidden": true
+					}
+				},
 				"source": [
 					"match_data_kept"
 				],
-				"execution_count": 150
+				"execution_count": 81
 			},
 			{
 				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"outputs_hidden": true
+					}
+				},
 				"source": [
 					"match_dataframe = pd.DataFrame(match_data_kept)\n",
 					"match_dataframe"
 				],
-				"execution_count": 151
+				"execution_count": 82
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"source_hidden": false,
+						"outputs_hidden": false
+					},
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"challenger_matches_filepath = f'abfss://lolitemfs@lolitemstorage2.dfs.core.windows.net/lol-data/challenger_matches_patch_{patch_number}.csv'\r\n",
+					"match_dataframe.to_csv(challenger_matches_filepath, index=False)"
+				],
+				"execution_count": 84
 			}
 		]
 	}

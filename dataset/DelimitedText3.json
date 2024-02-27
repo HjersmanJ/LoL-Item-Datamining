@@ -1,0 +1,121 @@
+{
+	"name": "DelimitedText3",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "lolsynapse-WorkspaceDefaultStorage",
+			"type": "LinkedServiceReference"
+		},
+		"annotations": [],
+		"type": "DelimitedText",
+		"typeProperties": {
+			"location": {
+				"type": "AzureBlobFSLocation",
+				"fileName": "challenger_matches_patch_14.4.1.csv",
+				"folderPath": "lol-data",
+				"fileSystem": "lolitemfs"
+			},
+			"columnDelimiter": ",",
+			"escapeChar": "\\",
+			"firstRowAsHeader": true,
+			"quoteChar": "\""
+		},
+		"schema": [
+			{
+				"name": "assists",
+				"type": "String"
+			},
+			{
+				"name": "championName",
+				"type": "String"
+			},
+			{
+				"name": "deaths",
+				"type": "String"
+			},
+			{
+				"name": "gameEndedInEarlySurrender",
+				"type": "String"
+			},
+			{
+				"name": "gameEndedInSurrender",
+				"type": "String"
+			},
+			{
+				"name": "goldEarned",
+				"type": "String"
+			},
+			{
+				"name": "goldSpent",
+				"type": "String"
+			},
+			{
+				"name": "item0",
+				"type": "String"
+			},
+			{
+				"name": "item1",
+				"type": "String"
+			},
+			{
+				"name": "item2",
+				"type": "String"
+			},
+			{
+				"name": "item3",
+				"type": "String"
+			},
+			{
+				"name": "item4",
+				"type": "String"
+			},
+			{
+				"name": "item5",
+				"type": "String"
+			},
+			{
+				"name": "item6",
+				"type": "String"
+			},
+			{
+				"name": "kills",
+				"type": "String"
+			},
+			{
+				"name": "magicDamageDealtToChampions",
+				"type": "String"
+			},
+			{
+				"name": "magicDamageTaken",
+				"type": "String"
+			},
+			{
+				"name": "physicalDamageDealtToChampions",
+				"type": "String"
+			},
+			{
+				"name": "physicalDamageTaken",
+				"type": "String"
+			},
+			{
+				"name": "teamPosition",
+				"type": "String"
+			},
+			{
+				"name": "timePlayed",
+				"type": "String"
+			},
+			{
+				"name": "totalMinionsKilled",
+				"type": "String"
+			},
+			{
+				"name": "visionScore",
+				"type": "String"
+			},
+			{
+				"name": "win",
+				"type": "String"
+			}
+		]
+	}
+}
