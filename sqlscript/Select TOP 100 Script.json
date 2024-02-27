@@ -1,0 +1,17 @@
+{
+	"name": "Select TOP 100 Script",
+	"properties": {
+		"content": {
+			"query": "USE LoL_Data;\nGO;\n\nSELECT TOP 100 * \nFROM dbo.item_details",
+			"metadata": {
+				"language": "sql"
+			},
+			"currentConnection": {
+				"databaseName": "LoL_Data",
+				"poolName": "Built-in"
+			},
+			"resultLimit": 5000
+		},
+		"type": "SqlQuery"
+	}
+}
