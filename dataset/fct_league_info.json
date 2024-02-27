@@ -1,10 +1,6 @@
 {
 	"name": "fct_league_info",
 	"properties": {
-		"linkedServiceName": {
-			"referenceName": "lol-pipelines-WorkspaceDefaultStorage",
-			"type": "LinkedServiceReference"
-		},
 		"annotations": [],
 		"type": "DelimitedText",
 		"typeProperties": {

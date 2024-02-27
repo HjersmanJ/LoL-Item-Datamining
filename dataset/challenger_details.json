@@ -2,7 +2,7 @@
 	"name": "challenger_details",
 	"properties": {
 		"linkedServiceName": {
-			"referenceName": "lol-pipelines-WorkspaceDefaultStorage",
+			"referenceName": "lolsynapse-WorkspaceDefaultStorage",
 			"type": "LinkedServiceReference"
 		},
 		"annotations": [],
@@ -12,7 +12,7 @@
 				"type": "AzureBlobFSLocation",
 				"fileName": "challenger_details_patch_14.1.csv",
 				"folderPath": "lol_item_data",
-				"fileSystem": "lol-data"
+				"fileSystem": "lolitemfs"
 			},
 			"columnDelimiter": ",",
 			"escapeChar": "\\",

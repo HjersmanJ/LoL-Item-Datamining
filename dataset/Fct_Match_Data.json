@@ -1,10 +1,6 @@
 {
 	"name": "Fct_Match_Data",
 	"properties": {
-		"linkedServiceName": {
-			"referenceName": "lol-pipelines-WorkspaceDefaultStorage",
-			"type": "LinkedServiceReference"
-		},
 		"annotations": [],
 		"type": "DelimitedText",
 		"typeProperties": {

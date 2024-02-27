@@ -1,10 +1,6 @@
 {
 	"name": "fctChallengerDetails",
 	"properties": {
-		"linkedServiceName": {
-			"referenceName": "lol-pipelines-WorkspaceDefaultStorage",
-			"type": "LinkedServiceReference"
-		},
 		"annotations": [],
 		"type": "DelimitedText",
 		"typeProperties": {
