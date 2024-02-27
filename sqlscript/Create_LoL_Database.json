@@ -1,0 +1,18 @@
+{
+	"name": "Create_LoL_Database",
+	"properties": {
+		"description": "Creating Initial Database for the basic info required such as item details, players, and matches.",
+		"content": {
+			"query": "CREATE DATABASE LoL_Data\n    COLLATE Latin1_General_100_BIN2_UTF8;\nGO;\n\nUSE LoL_Data;\nGO;\n\nCREATE EXTERNAL DATA SOURCE item_details  WITH (\n    LOCATION = 'abfss://lolitemfs@lolitemstorage2.dfs.core.windows.net/lol-data/'\n);\nGO;\n\nCREATE EXTERNAL FILE FORMAT ParquetFormat\n    WITH (\n            FORMAT_TYPE = PARQUET,\n            DATA_COMPRESSION = 'org.apache.hadoop.io.compress.SnappyCodec'\n    )",
+			"metadata": {
+				"language": "sql"
+			},
+			"currentConnection": {
+				"databaseName": "LoL_Data",
+				"poolName": "Built-in"
+			},
+			"resultLimit": 5000
+		},
+		"type": "SqlQuery"
+	}
+}
