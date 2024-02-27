@@ -1,0 +1,44 @@
+﻿assists,championName,deaths,gameEndedInEarlySurrender,gameEndedInSurrender,goldEarned,goldSpent,item0,item1,item2,item3,item4,item5,item6,kills,magicDamageDealtToChampions,magicDamageTaken,physicalDamageDealtToChampions,physicalDamageTaken,teamPosition,timePlayed,totalMinionsKilled,visionScore,win,patch
+12,Neeko,2,False,False,8964,6585,Hextech Rocketbelt,Zaz'Zak's Realmspike,Needlessly Large Rod,Amplifying Tome,Amplifying Tome,Sorcerer's Shoes,Oracle Lens,4,12084,4000,1230,8426,UTILITY,1395,45,60,True,14.4.1
+15,Sona,3,False,True,9828,8050,Bloodsong,Seraph's Embrace,Ionian Boots of Lucidity,Ardent Censer,Dark Seal,Fiendish Codex,Oracle Lens,2,7158,8097,2836,6389,UTILITY,2027,36,107,True,14.4.1
+9,Neeko,6,False,True,10288,9150,Hextech Rocketbelt,Zaz'Zak's Realmspike,Control Ward,Blighting Jewel,Sorcerer's Shoes,Zhonya's Hourglass,Oracle Lens,5,15874,11520,991,5869,UTILITY,2160,51,112,False,14.4.1
+17,Nami,7,False,True,9233,7750,Dream Maker,Imperial Mandate,Dark Seal,Boots of Swiftness,Staff of Flowing Water,Aether Wisp,Oracle Lens,4,10450,3335,1310,14638,UTILITY,1664,25,68,True,14.4.1
+18,Neeko,6,False,False,11113,10850,Hextech Rocketbelt,Zaz'Zak's Realmspike,Control Ward,Cryptbloom,Sorcerer's Shoes,Zhonya's Hourglass,Oracle Lens,7,22970,5282,1640,10731,UTILITY,1734,37,77,True,14.4.1
+17,Sona,1,False,True,8677,6450,Celestial Opposition,Ionian Boots of Lucidity,Seraph's Embrace,Dark Seal,Fiendish Codex,Forbidden Idol,Oracle Lens,3,6059,1651,1083,3277,UTILITY,1421,24,57,True,14.4.1
+13,Seraphine,5,False,False,11622,10085,Staff of Flowing Water,Fiendish Codex,Seraph's Embrace,Doran's Ring,Ionian Boots of Lucidity,Moonstone Renewer,Farsight Alteration,3,8924,2539,2106,14089,BOTTOM,1739,222,23,True,14.4.1
+22,Sona,6,False,True,7899,6550,Bloodsong,Seraph's Embrace,Ionian Boots of Lucidity,Forbidden Idol,Fiendish Codex,Dark Seal,Oracle Lens,1,5697,10439,2260,5435,UTILITY,1441,24,64,True,14.4.1
+7,Olaf,7,False,False,12361,10750,Doran's Blade,Ravenous Hydra,Sundered Sky,Frozen Heart,Plated Steelcaps,Long Sword,Stealth Ward,3,140,4337,16880,21846,TOP,1933,226,19,True,14.4.1
+3,Fiora,5,False,False,17352,16633,Eclipse,Ravenous Hydra,Ionian Boots of Lucidity,Hexdrinker,Trinity Force,Death's Dance,Stealth Ward,14,1127,11060,22967,16041,TOP,1665,202,22,False,14.4.1
+14,Ezreal,7,False,True,13279,13225,Muramana,Bloodsong,Frozen Heart,Horizon Focus,Ionian Boots of Lucidity,Banshee's Veil,Oracle Lens,6,12837,9711,20066,9879,UTILITY,2020,53,85,False,14.4.1
+18,Janna,5,False,False,9594,8700,Zaz'Zak's Realmspike,Shurelya's Battlesong,Ardent Censer,Imperial Mandate,Dark Seal,Boots of Swiftness,Oracle Lens,4,9189,8999,1451,9192,UTILITY,1541,25,69,True,14.4.1
+13,Sona,0,False,True,7002,6450,Bloodsong,Seraph's Embrace,Mejai's Soulstealer,Ionian Boots of Lucidity,Amplifying Tome,Faerie Charm,Oracle Lens,2,6893,1386,2559,6259,UTILITY,1153,17,36,True,14.4.1
+5,Yone,2,False,False,14404,12550,Immortal Shieldbow,Steel Sigil,Berserker's Greaves,Kraken Slayer,Infinity Edge,Long Sword,Stealth Ward,12,4633,4832,18944,14504,TOP,1449,188,13,True,14.4.1
+9,Aatrox,6,False,False,14319,12937,Maw of Malmortius,Eclipse,Edge of Night,Last Whisper,Plated Steelcaps,The Brutalizer,Oracle Lens,11,3805,17365,25317,19923,TOP,1696,181,19,True,14.4.1
+5,Olaf,5,False,True,16287,15750,Eclipse,Ravenous Hydra,Plated Steelcaps,Maw of Malmortius,Mortal Reminder,Rectrix,Stealth Ward,11,0,14152,30490,22186,TOP,1776,243,17,True,14.4.1
+13,Karma,1,False,False,9051,7500,Zaz'Zak's Realmspike,Malignance,Ionian Boots of Lucidity,Morellonomicon,Fiendish Codex,Dark Seal,Oracle Lens,3,15540,8466,733,5601,UTILITY,1618,41,57,True,14.4.1
+6,Ezreal,3,False,False,10477,10212,Ionian Boots of Lucidity,Bloodsong,Voltaic Cyclosword,Muramana,The Brutalizer,Last Whisper,Farsight Alteration,9,3293,1395,11244,9475,UTILITY,1124,47,30,True,14.4.1
+1,Gwen,9,False,False,13569,13150,Rabadon's Deathcap,Riftmaker,Ionian Boots of Lucidity,Nashor's Tooth,Needlessly Large Rod,Hextech Alternator,Stealth Ward,6,24210,12370,3793,21671,TOP,1751,209,19,False,14.4.1
+1,Yone,1,False,True,15872,14300,Doran's Blade,Berserker's Greaves,Blade of The Ruined King,Navori Quickblades,"Jak'Sho, The Protean",Terminus,Stealth Ward,9,5599,4635,19216,13672,TOP,1541,248,16,True,14.4.1
+2,Fiora,2,False,True,12668,9050,Doran's Blade,Ravenous Hydra,Ionian Boots of Lucidity,Phage,Essence Reaver,Long Sword,Stealth Ward,10,1045,2292,13042,15646,TOP,1103,176,9,True,14.4.1
+1,Khazix,4,False,True,6389,5750,Gustwalker Hatchling,Hubris,Serrated Dirk,Rectrix,Slightly Magical Footwear,Long Sword,Oracle Lens,2,266,4337,6848,12296,JUNGLE,1142,6,10,False,14.4.1
+4,Neeko,0,False,True,5818,5250,Hextech Rocketbelt,Zaz'Zak's Realmspike,Amplifying Tome,Refillable Potion,Sorcerer's Shoes,Amplifying Tome,Oracle Lens,3,6162,3532,639,2368,UTILITY,912,16,28,True,14.4.1
+8,Sona,7,False,False,8179,7800,Bloodsong,Seraph's Embrace,Dark Seal,Staff of Flowing Water,Ionian Boots of Lucidity,Aether Wisp,Oracle Lens,3,10923,6405,4645,13578,UTILITY,1590,40,53,False,14.4.1
+21,Rell,6,False,False,9181,9025,Zeke's Convergence,Solstice Sleigh,Giant's Belt,Trailblazer,Plated Steelcaps,Winged Moonplate,Oracle Lens,2,5635,10713,2533,10990,UTILITY,1786,28,94,False,14.4.1
+7,Fiora,9,False,False,18327,17208,Death's Dance,Ravenous Hydra,Kaenic Rookern,Trinity Force,Maw of Malmortius,Mercury's Treads,Farsight Alteration,13,2078,25013,24321,15955,TOP,1919,229,22,True,14.4.1
+17,Neeko,8,False,True,10617,10225,Hextech Rocketbelt,Zaz'Zak's Realmspike,Fiendish Codex,Blighting Jewel,Ionian Boots of Lucidity,Zhonya's Hourglass,Oracle Lens,4,26294,13531,1328,14704,UTILITY,2153,37,130,False,14.4.1
+10,Hwei,6,False,False,10000,9325,Horizon Focus,Zaz'Zak's Realmspike,Needlessly Large Rod,Cryptbloom,Sorcerer's Shoes,Amplifying Tome,Oracle Lens,3,28589,11756,1335,8971,UTILITY,2037,36,75,False,14.4.1
+26,Sona,4,False,False,7313,5900,Bloodsong,Ionian Boots of Lucidity,Seraph's Embrace,Dark Seal,Fiendish Codex,Faerie Charm,Oracle Lens,1,6954,3756,3561,7537,UTILITY,1219,15,39,True,14.4.1
+9,Janna,4,False,False,8469,7825,Zaz'Zak's Realmspike,Morellonomicon,Dark Seal,Imperial Mandate,Boots of Swiftness,Aether Wisp,Oracle Lens,4,13243,6535,1484,10902,UTILITY,1537,41,58,False,14.4.1
+19,Sona,5,False,True,8238,7600,Bloodsong,Seraph's Embrace,Staff of Flowing Water,Ionian Boots of Lucidity,Amplifying Tome,Dark Seal,Oracle Lens,2,7528,12372,3178,8934,UTILITY,1511,24,52,True,14.4.1
+6,Rakan,1,False,True,5763,5200,Refillable Potion,Solstice Sleigh,Control Ward,Ionian Boots of Lucidity,Winged Moonplate,Zeke's Convergence,Oracle Lens,1,2961,4430,1272,5126,UTILITY,1262,27,66,True,14.4.1
+17,Alistar,2,False,False,8802,7450,Zeke's Convergence,Solstice Sleigh,Control Ward,Ionian Boots of Lucidity,Trailblazer,Ruby Crystal,Oracle Lens,2,5637,9153,800,11763,UTILITY,1669,31,80,True,14.4.1
+7,Ezreal,6,False,False,9192,9200,Muramana,Bloodsong,Caulfield's Warhammer,Ionian Boots of Lucidity,Executioner's Calling,Horizon Focus,Farsight Alteration,3,6718,10677,14069,9211,UTILITY,1801,50,54,False,14.4.1
+12,Ezreal,8,False,False,11060,10700,Horizon Focus,Bloodsong,Frozen Heart,Ionian Boots of Lucidity,Muramana,Serrated Dirk,Oracle Lens,8,8575,9368,14246,13120,UTILITY,1569,55,41,True,14.4.1
+11,Karma,3,False,True,14606,14660,Cosmic Drive,Rod of Ages,Ionian Boots of Lucidity,Morellonomicon,Blighting Jewel,Horizon Focus,Farsight Alteration,4,15782,13899,3323,16641,TOP,2564,254,55,True,14.4.1
+5,Neeko,4,False,True,5290,5225,Hextech Rocketbelt,Zaz'Zak's Realmspike,Amplifying Tome,Refillable Potion,Amplifying Tome,Sorcerer's Shoes,Oracle Lens,0,8515,3596,390,7380,UTILITY,1335,29,43,False,14.4.1
+21,Sona,7,False,False,9461,9500,Bloodsong,Seraph's Embrace,Ionian Boots of Lucidity,Staff of Flowing Water,Ardent Censer,Amplifying Tome,Oracle Lens,1,11385,12770,4422,14320,UTILITY,2087,25,91,False,14.4.1
+9,Sona,8,False,True,7648,7350,Celestial Opposition,Seraph's Embrace,Ionian Boots of Lucidity,Staff of Flowing Water,Amplifying Tome,Faerie Charm,Oracle Lens,5,9314,4722,2308,11990,UTILITY,1416,21,42,False,14.4.1
+20,Sona,4,False,False,9331,7300,Bloodsong,Seraph's Embrace,Ionian Boots of Lucidity,Staff of Flowing Water,Dark Seal,Faerie Charm,Oracle Lens,4,10110,6210,3904,8118,UTILITY,1439,25,51,True,14.4.1
+21,Alistar,5,False,True,9413,8175,Zeke's Convergence,Solstice Sleigh,Control Ward,Trailblazer,Ionian Boots of Lucidity,Kindlegem,Oracle Lens,4,7866,8180,1204,16965,UTILITY,1769,11,94,True,14.4.1
+7,Fiora,11,False,False,12775,12058,Ionian Boots of Lucidity,Ravenous Hydra,Eclipse,Trinity Force,Long Sword,Pickaxe,Stealth Ward,7,724,18066,8788,15512,TOP,1834,219,19,False,14.4.1
+5,Fiora,12,False,False,15148,14908,Death's Dance,Ravenous Hydra,Ionian Boots of Lucidity,Trinity Force,Eclipse,Pickaxe,Stealth Ward,5,1053,10489,13905,33563,TOP,1950,218,23,False,14.4.1
