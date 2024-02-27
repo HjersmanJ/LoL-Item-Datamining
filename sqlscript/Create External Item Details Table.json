@@ -1,0 +1,17 @@
+{
+	"name": "Create External Item Details Table",
+	"properties": {
+		"content": {
+			"query": "USE LoL_Data;\n\nCREATE EXTERNAL TABLE item_details\n    WITH (\n        LOCATION = 'lol_data/',\n        DATA_SOURCE = lol_datasets,\n        FILE_FORMAT = ParquetFormat\n    )\nAS\nSELECT id,\n    name,\n    '14.4.1' AS patch\nFROM \n    OPENROWSET(\n        BULK 'item_details_patch_14.4.1.csv',\n        DATA_SOURCE = 'lol_datasets',\n        FORMAT = 'CSV',\n        PARSER_VERSION = '2.0',\n        HEADER_ROW = TRUE\n    ) AS item_details\nGROUP BY id, name;",
+			"metadata": {
+				"language": "sql"
+			},
+			"currentConnection": {
+				"databaseName": "LoL_Data",
+				"poolName": "Built-in"
+			},
+			"resultLimit": 5000
+		},
+		"type": "SqlQuery"
+	}
+}
