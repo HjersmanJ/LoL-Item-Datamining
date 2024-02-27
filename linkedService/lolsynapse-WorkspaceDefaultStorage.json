@@ -1,9 +1,9 @@
 {
-	"name": "lol-pipelines-WorkspaceDefaultStorage",
+	"name": "lolsynapse-WorkspaceDefaultStorage",
 	"type": "Microsoft.Synapse/workspaces/linkedservices",
 	"properties": {
 		"typeProperties": {
-			"url": "https://loldata.dfs.core.windows.net"
+			"url": "https://lolitemstorage2.dfs.core.windows.net"
 		},
 		"type": "AzureBlobFS",
 		"connectVia": {

@@ -160,7 +160,7 @@
 				},
 				"inputs": [
 					{
-						"referenceName": "dim_item_info",
+						"referenceName": "DelimitedText1",
 						"type": "DatasetReference"
 					}
 				],

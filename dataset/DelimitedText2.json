@@ -1,14 +1,18 @@
 {
-	"name": "fctChallengerDetails",
+	"name": "DelimitedText2",
 	"properties": {
+		"linkedServiceName": {
+			"referenceName": "lolsynapse-WorkspaceDefaultStorage",
+			"type": "LinkedServiceReference"
+		},
 		"annotations": [],
 		"type": "DelimitedText",
 		"typeProperties": {
 			"location": {
 				"type": "AzureBlobFSLocation",
-				"fileName": "fct_challenger_details_patch_14.1.csv",
-				"folderPath": "lol_item_data",
-				"fileSystem": "lol-data"
+				"fileName": "item_details_patch_14.4.1.csv",
+				"folderPath": "lol-data",
+				"fileSystem": "lolitemfs"
 			},
 			"columnDelimiter": ",",
 			"escapeChar": "\\",
@@ -17,18 +21,13 @@
 		},
 		"schema": [
 			{
-				"name": "puuid",
+				"name": "id",
 				"type": "String"
 			},
 			{
-				"name": "summonerName",
-				"type": "String"
-			},
-			{
-				"name": "leaguePoints",
+				"name": "name",
 				"type": "String"
 			}
 		]
-	},
-	"type": "Microsoft.Synapse/workspaces/datasets"
+	}
 }

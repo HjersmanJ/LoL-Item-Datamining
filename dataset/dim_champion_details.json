@@ -1,10 +1,6 @@
 {
 	"name": "dim_champion_details",
 	"properties": {
-		"linkedServiceName": {
-			"referenceName": "lol-pipelines-WorkspaceDefaultStorage",
-			"type": "LinkedServiceReference"
-		},
 		"annotations": [],
 		"type": "DelimitedText",
 		"typeProperties": {
