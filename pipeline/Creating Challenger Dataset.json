@@ -163,16 +163,6 @@
 				"typeProperties": {
 					"scripts": [
 						{
-							"parameters": [
-								{
-									"name": "",
-									"value": ""
-								},
-								{
-									"name": "",
-									"value": ""
-								}
-							],
 							"type": "Query",
 							"text": "SELECT [assists]\n,[championName]\n,[deaths]\n,[gameEndedInEarlySurrender]\n,[gameEndedInSurrender]\n,[goldEarned]\n,[goldSpent]\n,i0.[name] AS item0\n,i1.[name] AS item1\n,i2.[name] AS item2\n,i3.[name] AS item3\n,i4.[name] AS item4\n,i5.[name] AS item5\n,i6.[name] AS item6\n,[kills]\n,[magicDamageDealtToChampions]\n,[magicDamageTaken]\n,[physicalDamageDealtToChampions]\n,[physicalDamageTaken]\n,[teamPosition]\n,[timePlayed]\n,[totalMinionsKilled]\n,[visionScore]\n,[win]\n,c.[patch]\n FROM [dbo].[challenger_matches] c\nJOIN item_details i0 ON c.item0 = i0.id \nJOIN item_details i1 ON c.item1 = i1.id \nJOIN item_details i2 ON c.item2 = i2.id \nJOIN item_details i3 ON c.item3 = i3.id \nJOIN item_details i4 ON c.item4 = i4.id \nJOIN item_details i5 ON c.item5 = i5.id \nJOIN item_details i6 ON c.item6 = i6.id "
 						}
