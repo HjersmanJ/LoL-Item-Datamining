@@ -7,7 +7,7 @@
 		"pipelines": [
 			{
 				"pipelineReference": {
-					"referenceName": "Pipeline 1",
+					"referenceName": "Creating Challenger Dataset",
 					"type": "PipelineReference"
 				}
 			}

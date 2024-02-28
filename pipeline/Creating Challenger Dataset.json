@@ -1,5 +1,5 @@
 {
-	"name": "Pipeline 1",
+	"name": "Creating Challenger Dataset",
 	"properties": {
 		"activities": [
 			{
@@ -178,6 +178,35 @@
 						}
 					],
 					"scriptBlockExecutionTimeout": "02:00:00"
+				}
+			},
+			{
+				"name": "SQL Fail Log",
+				"type": "Fail",
+				"dependsOn": [
+					{
+						"activity": "Create External Challenger Table",
+						"dependencyConditions": [
+							"Failed"
+						]
+					},
+					{
+						"activity": "Create External Item Details Table",
+						"dependencyConditions": [
+							"Failed"
+						]
+					},
+					{
+						"activity": "Join Item and Match Info",
+						"dependencyConditions": [
+							"Failed"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"message": "Issue with SQL Script. Check to ensure DB is connected and test separately.",
+					"errorCode": "005"
 				}
 			}
 		],
