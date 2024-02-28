@@ -1,0 +1,264 @@
+{
+	"name": "Challenger Matches",
+	"properties": {
+		"description": "For importing challenger match data from Riot API.",
+		"folder": {
+			"name": "Importing Data"
+		},
+		"nbformat": 4,
+		"nbformat_minor": 2,
+		"sessionProperties": {
+			"driverMemory": "28g",
+			"driverCores": 4,
+			"executorMemory": "28g",
+			"executorCores": 4,
+			"numExecutors": 2,
+			"conf": {
+				"spark.dynamicAllocation.enabled": "false",
+				"spark.dynamicAllocation.minExecutors": "2",
+				"spark.dynamicAllocation.maxExecutors": "2",
+				"spark.autotune.trackingId": "66869962-f8da-4682-8bf5-6c503a3445c2"
+			}
+		},
+		"metadata": {
+			"saveOutput": true,
+			"enableDebugMode": false,
+			"kernelspec": {
+				"name": "synapse_pyspark",
+				"display_name": "python"
+			},
+			"language_info": {
+				"name": "python"
+			},
+			"sessionKeepAliveTimeout": 30
+		},
+		"cells": [
+			{
+				"cell_type": "code",
+				"source": [
+					"import requests\r\n",
+					"import json\r\n",
+					"import pandas as pd\r\n",
+					"import time"
+				],
+				"execution_count": null
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"source_hidden": false,
+						"outputs_hidden": false
+					},
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"api_key = ''\r\n",
+					"patch_number = '14.4.1'"
+				],
+				"execution_count": null
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"source_hidden": false,
+						"outputs_hidden": false
+					},
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"challenger_queue_url = 'https://na1.api.riotgames.com/lol/league/v4/challengerleagues/by-queue/RANKED_SOLO_5x5?api_key=' + api_key\r\n",
+					"r = requests.get(challenger_queue_url)\r\n",
+					"challenger_data = r.json()"
+				],
+				"execution_count": null
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"source_hidden": false,
+						"outputs_hidden": false
+					},
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"challenger_temp_list_2 = []\r\n",
+					"\r\n",
+					"for challenger in challenger_data['entries']:\r\n",
+					"    challenger_temp_list_1 = []\r\n",
+					"    challenger_temp_list_1.append(challenger['summonerId'])\r\n",
+					"    challenger_temp_list_1.append(challenger['summonerName'])\r\n",
+					"    challenger_temp_list_1.append(challenger['leaguePoints'])\r\n",
+					"    challenger_temp_list_2.append(challenger_temp_list_1)"
+				],
+				"execution_count": null
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"source_hidden": false,
+						"outputs_hidden": false
+					},
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"challenger_details = pd.DataFrame(challenger_temp_list_2)\r\n",
+					"challenger_details.rename(columns={0: \"summonerId\", 1: \"summonerName\", 2: \"leaguePoints\"}, inplace=True)"
+				],
+				"execution_count": null
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"source_hidden": false,
+						"outputs_hidden": false
+					},
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"for index, row in challenger_details.iterrows():\r\n",
+					"    current_summoner = row['summonerId']\r\n",
+					"    summoner_url = 'https://na1.api.riotgames.com/lol/summoner/v4/summoners/' + current_summoner  + '?' + 'api_key=' + api_key\r\n",
+					"    r = requests.get(summoner_url)\r\n",
+					"    while r.status_code == 429:\r\n",
+					"        time.sleep(20)\r\n",
+					"        r = requests.get(summoner_url)\r\n",
+					"    summoner_data = r.json()\r\n",
+					"    challenger_details.replace(current_summoner, summoner_data['puuid'], inplace=True)"
+				],
+				"execution_count": null
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"source_hidden": false,
+						"outputs_hidden": false
+					},
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"challenger_details.rename(columns={\"summonerId\": \"puuid\"}, inplace=True)\r\n",
+					"challenger_details_filepath = f'abfss://lolitemfs@lolitemstorage2.dfs.core.windows.net/lol-data/challenger_details_patch_{patch_number}.csv'\r\n",
+					"challenger_details.to_csv(challenger_details_filepath, index=False)"
+				],
+				"execution_count": null
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"source_hidden": false,
+						"outputs_hidden": false
+					},
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"match_data_kept = {\r\n",
+					"    'assists': [],\r\n",
+					"    'championName': [],\r\n",
+					"    'deaths': [],\r\n",
+					"    'gameEndedInEarlySurrender': [],\r\n",
+					"    'gameEndedInSurrender': [],\r\n",
+					"    'goldEarned': [],\r\n",
+					"    'goldSpent': [],\r\n",
+					"    'item0': [],\r\n",
+					"    'item1': [],\r\n",
+					"    'item2': [],\r\n",
+					"    'item3': [],\r\n",
+					"    'item4': [],\r\n",
+					"    'item5': [],\r\n",
+					"    'item6': [],\r\n",
+					"    'kills': [],\r\n",
+					"    'magicDamageDealtToChampions': [],\r\n",
+					"    'magicDamageTaken': [],\r\n",
+					"    'physicalDamageDealtToChampions': [],\r\n",
+					"    'physicalDamageTaken': [],\r\n",
+					"    'teamPosition': [],\r\n",
+					"    'timePlayed': [],\r\n",
+					"    'totalMinionsKilled': [],\r\n",
+					"    'visionScore': [],\r\n",
+					"    'win': []\r\n",
+					"}"
+				],
+				"execution_count": null
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"source_hidden": false,
+						"outputs_hidden": false
+					},
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"def assign_match_data_values(current_match_data):\r\n",
+					"    match_data_kept['assists'].append(current_match_data['assists'])\r\n",
+					"    match_data_kept['championName'].append(current_match_data['championName'])\r\n",
+					"    match_data_kept['deaths'].append(current_match_data['deaths'])\r\n",
+					"    match_data_kept['gameEndedInEarlySurrender'].append(current_match_data['gameEndedInEarlySurrender'])\r\n",
+					"    match_data_kept['gameEndedInSurrender'].append(current_match_data['gameEndedInSurrender'])\r\n",
+					"    match_data_kept['goldEarned'].append(current_match_data['goldEarned'])\r\n",
+					"    match_data_kept['goldSpent'].append(current_match_data['goldSpent'])\r\n",
+					"                                        \r\n",
+					"    match_data_kept['item0'].append(current_match_data['item0'])\r\n",
+					"    match_data_kept['item1'].append(current_match_data['item1'])\r\n",
+					"    match_data_kept['item2'].append(current_match_data['item2'])\r\n",
+					"    match_data_kept['item3'].append(current_match_data['item3'])\r\n",
+					"    match_data_kept['item4'].append(current_match_data['item4'])\r\n",
+					"    match_data_kept['item5'].append(current_match_data['item5'])\r\n",
+					"    match_data_kept['item6'].append(current_match_data['item6'])\r\n",
+					"                                    \r\n",
+					"    match_data_kept['kills'].append(current_match_data['kills'])\r\n",
+					"    match_data_kept['magicDamageDealtToChampions'].append(current_match_data['magicDamageDealtToChampions'])\r\n",
+					"    match_data_kept['magicDamageTaken'].append(current_match_data['magicDamageTaken'])\r\n",
+					"    match_data_kept['physicalDamageDealtToChampions'].append(current_match_data['physicalDamageDealtToChampions'])\r\n",
+					"    match_data_kept['physicalDamageTaken'].append(current_match_data['physicalDamageTaken'])\r\n",
+					"    match_data_kept['teamPosition'].append(current_match_data['teamPosition'])\r\n",
+					"    match_data_kept['timePlayed'].append(current_match_data['timePlayed'])\r\n",
+					"    match_data_kept['totalMinionsKilled'].append(current_match_data['totalMinionsKilled'])\r\n",
+					"    match_data_kept['visionScore'].append(current_match_data['visionScore'])\r\n",
+					"    match_data_kept['win'].append(current_match_data['win'])"
+				],
+				"execution_count": null
+			}
+		]
+	}
+}
