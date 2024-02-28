@@ -21,7 +21,7 @@
 				"spark.dynamicAllocation.enabled": "false",
 				"spark.dynamicAllocation.minExecutors": "2",
 				"spark.dynamicAllocation.maxExecutors": "2",
-				"spark.autotune.trackingId": "d575cfb1-18d9-4a3c-8094-6685def9b2f0"
+				"spark.autotune.trackingId": "a5ce39d0-c4e9-4711-8045-110038d0c721"
 			}
 		},
 		"metadata": {
@@ -73,7 +73,7 @@
 			{
 				"cell_type": "code",
 				"source": [
-					"api_key = 'RGAPI-8526afc2-81e8-49ce-aa53-59a94379c0a0'\r\n",
+					"api_key = ''\r\n",
 					"patch_number = '14.4.1'"
 				],
 				"execution_count": 2
