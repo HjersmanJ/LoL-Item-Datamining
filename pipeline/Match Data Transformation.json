@@ -82,7 +82,13 @@
 				"typeProperties": {
 					"dataflow": {
 						"referenceName": "Fct_Match_Info_Transformation",
-						"type": "DataFlowReference"
+						"type": "DataFlowReference",
+						"parameters": {
+							"parameter1": {
+								"value": "'@{activity('Validated Item Data').output}'",
+								"type": "Expression"
+							}
+						}
 					},
 					"compute": {
 						"coreCount": 8,

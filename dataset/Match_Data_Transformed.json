@@ -1,6 +1,10 @@
 {
 	"name": "Match_Data_Transformed",
 	"properties": {
+		"linkedServiceName": {
+			"referenceName": "lolsynapse-WorkspaceDefaultStorage",
+			"type": "LinkedServiceReference"
+		},
 		"annotations": [],
 		"type": "DelimitedText",
 		"typeProperties": {

@@ -1,0 +1,26 @@
+{
+	"name": "Grab Daily Matches",
+	"properties": {
+		"description": "This is after the ladder reset with some time passing to allow new games played. This usually has new players into the challenger matches dataset that wasn't there in the previous day.",
+		"annotations": [],
+		"runtimeState": "Started",
+		"pipelines": [
+			{
+				"pipelineReference": {
+					"referenceName": "Creating Challenger Dataset",
+					"type": "PipelineReference"
+				}
+			}
+		],
+		"type": "ScheduleTrigger",
+		"typeProperties": {
+			"recurrence": {
+				"frequency": "Day",
+				"interval": 1,
+				"startTime": "2024-02-27T05:30:00",
+				"endTime": "2024-03-15T10:30:00",
+				"timeZone": "Pacific Standard Time"
+			}
+		}
+	}
+}

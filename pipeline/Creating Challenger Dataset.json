@@ -1,0 +1,205 @@
+{
+	"name": "Creating Challenger Dataset",
+	"properties": {
+		"activities": [
+			{
+				"name": "Downloading_LoL_Data",
+				"type": "SynapseNotebook",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"notebook": {
+						"referenceName": "Downloading_Lol_Data",
+						"type": "NotebookReference"
+					},
+					"snapshot": true,
+					"sparkPool": {
+						"referenceName": "core4",
+						"type": "BigDataPoolReference"
+					},
+					"executorSize": "Small",
+					"conf": {
+						"spark.dynamicAllocation.enabled": true
+					},
+					"driverSize": "Small"
+				}
+			},
+			{
+				"name": "Fail Notebook Log",
+				"type": "Fail",
+				"dependsOn": [
+					{
+						"activity": "Downloading_LoL_Data",
+						"dependencyConditions": [
+							"Failed"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"message": "Unknown - Check Notebook for Error Message",
+					"errorCode": "006"
+				}
+			},
+			{
+				"name": "Create External Challenger Table",
+				"description": "USE LoL_Data;\n\nCREATE EXTERNAL TABLE challenger_matches\n    WITH (\n        LOCATION = '/challenger_matches',\n        DATA_SOURCE = lol_datasets,\n        FILE_FORMAT = ParquetFormat\n    )\nAS\nSELECT *,\n    '14.4.1' AS patch\nFROM \n    OPENROWSET(\n        BULK 'challenger_matches_patch_14.4.1.csv',\n        DATA_SOURCE = 'lol_datasets',\n        FORMAT = 'CSV',\n        PARSER_VERSION = '2.0',\n        HEADER_ROW = TRUE\n    ) AS item_details",
+				"type": "Script",
+				"dependsOn": [
+					{
+						"activity": "Downloading_LoL_Data",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"linkedServiceName": {
+					"referenceName": "Synapse_Master_DB",
+					"type": "LinkedServiceReference"
+				},
+				"typeProperties": {
+					"scripts": [
+						{
+							"type": "Query",
+							"text": "USE LoL_Data;\n\nCREATE EXTERNAL TABLE challenger_matches\n    WITH (\n        LOCATION = '/challenger_matches',\n        DATA_SOURCE = lol_datasets,\n        FILE_FORMAT = ParquetFormat\n    )\nAS\nSELECT *,\n    '14.4.1' AS patch\nFROM \n    OPENROWSET(\n        BULK 'challenger_matches_patch_14.4.1.csv',\n        DATA_SOURCE = 'lol_datasets',\n        FORMAT = 'CSV',\n        PARSER_VERSION = '2.0',\n        HEADER_ROW = TRUE\n    ) AS item_details"
+						}
+					],
+					"scriptBlockExecutionTimeout": "02:00:00"
+				}
+			},
+			{
+				"name": "Create External Item Details Table",
+				"type": "Script",
+				"dependsOn": [
+					{
+						"activity": "Downloading_LoL_Data",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"linkedServiceName": {
+					"referenceName": "Synapse_Master_DB",
+					"type": "LinkedServiceReference"
+				},
+				"typeProperties": {
+					"scripts": [
+						{
+							"type": "Query",
+							"text": "USE LoL_Data;\n\nCREATE EXTERNAL TABLE item_details\n    WITH (\n        LOCATION = 'lol_data/',\n        DATA_SOURCE = lol_datasets,\n        FILE_FORMAT = ParquetFormat\n    )\nAS\nSELECT *,\n    '14.4.1' AS patch\nFROM \n    OPENROWSET(\n        BULK 'item_details_patch_14.4.1.csv',\n        DATA_SOURCE = 'lol_datasets',\n        FORMAT = 'CSV',\n        PARSER_VERSION = '2.0',\n        HEADER_ROW = TRUE\n    ) AS item_details\nGROUP BY id, name;"
+						}
+					],
+					"scriptBlockExecutionTimeout": "02:00:00"
+				}
+			},
+			{
+				"name": "Wait 10 Seconds",
+				"type": "Wait",
+				"dependsOn": [
+					{
+						"activity": "Create External Item Details Table",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					},
+					{
+						"activity": "Create External Challenger Table",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"waitTimeInSeconds": 10
+				}
+			},
+			{
+				"name": "Join Item and Match Info",
+				"type": "Script",
+				"dependsOn": [
+					{
+						"activity": "Wait 10 Seconds",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"linkedServiceName": {
+					"referenceName": "Synapse_Master_DB",
+					"type": "LinkedServiceReference"
+				},
+				"typeProperties": {
+					"scripts": [
+						{
+							"type": "Query",
+							"text": "SELECT [assists]\n,[championName]\n,[deaths]\n,[gameEndedInEarlySurrender]\n,[gameEndedInSurrender]\n,[goldEarned]\n,[goldSpent]\n,i0.[name] AS item0\n,i1.[name] AS item1\n,i2.[name] AS item2\n,i3.[name] AS item3\n,i4.[name] AS item4\n,i5.[name] AS item5\n,i6.[name] AS item6\n,[kills]\n,[magicDamageDealtToChampions]\n,[magicDamageTaken]\n,[physicalDamageDealtToChampions]\n,[physicalDamageTaken]\n,[teamPosition]\n,[timePlayed]\n,[totalMinionsKilled]\n,[visionScore]\n,[win]\n,c.[patch]\n FROM [dbo].[challenger_matches] c\nJOIN item_details i0 ON c.item0 = i0.id \nJOIN item_details i1 ON c.item1 = i1.id \nJOIN item_details i2 ON c.item2 = i2.id \nJOIN item_details i3 ON c.item3 = i3.id \nJOIN item_details i4 ON c.item4 = i4.id \nJOIN item_details i5 ON c.item5 = i5.id \nJOIN item_details i6 ON c.item6 = i6.id "
+						}
+					],
+					"scriptBlockExecutionTimeout": "02:00:00"
+				}
+			},
+			{
+				"name": "SQL Fail Log",
+				"type": "Fail",
+				"dependsOn": [
+					{
+						"activity": "Create External Challenger Table",
+						"dependencyConditions": [
+							"Failed"
+						]
+					},
+					{
+						"activity": "Create External Item Details Table",
+						"dependencyConditions": [
+							"Failed"
+						]
+					},
+					{
+						"activity": "Join Item and Match Info",
+						"dependencyConditions": [
+							"Failed"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"message": "Issue with SQL Script. Check to ensure DB is connected and test separately.",
+					"errorCode": "005"
+				}
+			}
+		],
+		"annotations": []
+	}
+}

@@ -1,6 +1,10 @@
 {
 	"name": "Fct_Match_Data",
 	"properties": {
+		"linkedServiceName": {
+			"referenceName": "lolsynapse-WorkspaceDefaultStorage",
+			"type": "LinkedServiceReference"
+		},
 		"annotations": [],
 		"type": "DelimitedText",
 		"typeProperties": {

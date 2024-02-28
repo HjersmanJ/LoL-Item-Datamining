@@ -1,6 +1,10 @@
 {
 	"name": "fct_league_info",
 	"properties": {
+		"linkedServiceName": {
+			"referenceName": "lolsynapse-WorkspaceDefaultStorage",
+			"type": "LinkedServiceReference"
+		},
 		"annotations": [],
 		"type": "DelimitedText",
 		"typeProperties": {

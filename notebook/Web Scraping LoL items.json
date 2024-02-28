@@ -1,6 +1,9 @@
 {
 	"name": "Web Scraping LoL items",
 	"properties": {
+		"folder": {
+			"name": "Importing Data"
+		},
 		"nbformat": 4,
 		"nbformat_minor": 2,
 		"sessionProperties": {

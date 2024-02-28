@@ -1,0 +1,247 @@
+{
+	"name": "Converting to Full Datasets",
+	"properties": {
+		"folder": {
+			"name": "Importing Data"
+		},
+		"nbformat": 4,
+		"nbformat_minor": 2,
+		"sessionProperties": {
+			"driverMemory": "28g",
+			"driverCores": 4,
+			"executorMemory": "28g",
+			"executorCores": 4,
+			"numExecutors": 2,
+			"conf": {
+				"spark.dynamicAllocation.enabled": "false",
+				"spark.dynamicAllocation.minExecutors": "2",
+				"spark.dynamicAllocation.maxExecutors": "2",
+				"spark.autotune.trackingId": "da9bfb72-5665-4a78-9a1d-51c504f730b2"
+			}
+		},
+		"metadata": {
+			"saveOutput": true,
+			"enableDebugMode": false,
+			"kernelspec": {
+				"name": "synapse_pyspark",
+				"display_name": "python"
+			},
+			"language_info": {
+				"name": "python"
+			},
+			"sessionKeepAliveTimeout": 30
+		},
+		"cells": [
+			{
+				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"source_hidden": false,
+						"outputs_hidden": false
+					},
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"import requests\r\n",
+					"import json\r\n",
+					"import pandas as pd\r\n",
+					"import time"
+				],
+				"execution_count": null
+			},
+			{
+				"cell_type": "code",
+				"source": [
+					"api_key = ''\r\n",
+					"patch_number = '14.4.1'"
+				],
+				"execution_count": null
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"source_hidden": false,
+						"outputs_hidden": false
+					},
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"def challenger_matchlist(current_puuid):\r\n",
+					"    challenger_matchlist_url = 'https://americas.api.riotgames.com/lol/match/v5/matches/by-puuid/' + current_puuid + '/ids?queue=420&start=0&count=20&api_key=' + api_key\r\n",
+					"    r = requests.get(challenger_matchlist_url)\r\n",
+					"    matchlist_data = r.json()\r\n",
+					"    print(matchlist_data)\r\n",
+					"    return matchlist_data"
+				],
+				"execution_count": null
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"source_hidden": false,
+						"outputs_hidden": false
+					},
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"def grab_match_data(current_match):\r\n",
+					"    #current_match = 'NA1_4900084850'\r\n",
+					"    match_url = 'https://americas.api.riotgames.com/lol/match/v5/matches/' + current_match + '?api_key=' + api_key\r\n",
+					"    r = requests.get(match_url)\r\n",
+					"    match_data = r.json()\r\n",
+					"    print(match_data)\r\n",
+					"    return match_data"
+				],
+				"execution_count": null
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"source_hidden": false,
+						"outputs_hidden": false
+					},
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"def find_player(match_data, puuid):\r\n",
+					"    participant_list = match_data['metadata']['participants']\r\n",
+					"    player_index = participant_list.index(puuid)\r\n",
+					"    player_info = match_data['info']['participants'][player_index]\r\n",
+					"    return player_info"
+				],
+				"execution_count": null
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"source_hidden": false,
+						"outputs_hidden": false
+					},
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"match_data_kept = {\r\n",
+					"    'assists': [],\r\n",
+					"    'championName': [],\r\n",
+					"    'deaths': [],\r\n",
+					"    'gameEndedInEarlySurrender': [],\r\n",
+					"    'gameEndedInSurrender': [],\r\n",
+					"    'goldEarned': [],\r\n",
+					"    'goldSpent': [],\r\n",
+					"    'item0': [],\r\n",
+					"    'item1': [],\r\n",
+					"    'item2': [],\r\n",
+					"    'item3': [],\r\n",
+					"    'item4': [],\r\n",
+					"    'item5': [],\r\n",
+					"    'item6': [],\r\n",
+					"    'kills': [],\r\n",
+					"    'magicDamageDealtToChampions': [],\r\n",
+					"    'magicDamageTaken': [],\r\n",
+					"    'physicalDamageDealtToChampions': [],\r\n",
+					"    'physicalDamageTaken': [],\r\n",
+					"    'teamPosition': [],\r\n",
+					"    'timePlayed': [],\r\n",
+					"    'totalMinionsKilled': [],\r\n",
+					"    'visionScore': [],\r\n",
+					"    'win': []\r\n",
+					"}"
+				],
+				"execution_count": null
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"source_hidden": false,
+						"outputs_hidden": false
+					},
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"def assign_match_data_values(current_match_data):\r\n",
+					"    match_data_kept['assists'].append(current_match_data['assists'])\r\n",
+					"    match_data_kept['championName'].append(current_match_data['championName'])\r\n",
+					"    match_data_kept['deaths'].append(current_match_data['deaths'])\r\n",
+					"    match_data_kept['gameEndedInEarlySurrender'].append(current_match_data['gameEndedInEarlySurrender'])\r\n",
+					"    match_data_kept['gameEndedInSurrender'].append(current_match_data['gameEndedInSurrender'])\r\n",
+					"    match_data_kept['goldEarned'].append(current_match_data['goldEarned'])\r\n",
+					"    match_data_kept['goldSpent'].append(current_match_data['goldSpent'])\r\n",
+					"                                        \r\n",
+					"    match_data_kept['item0'].append(current_match_data['item0'])\r\n",
+					"    match_data_kept['item1'].append(current_match_data['item1'])\r\n",
+					"    match_data_kept['item2'].append(current_match_data['item2'])\r\n",
+					"    match_data_kept['item3'].append(current_match_data['item3'])\r\n",
+					"    match_data_kept['item4'].append(current_match_data['item4'])\r\n",
+					"    match_data_kept['item5'].append(current_match_data['item5'])\r\n",
+					"    match_data_kept['item6'].append(current_match_data['item6'])\r\n",
+					"                                    \r\n",
+					"    match_data_kept['kills'].append(current_match_data['kills'])\r\n",
+					"    match_data_kept['magicDamageDealtToChampions'].append(current_match_data['magicDamageDealtToChampions'])\r\n",
+					"    match_data_kept['magicDamageTaken'].append(current_match_data['magicDamageTaken'])\r\n",
+					"    match_data_kept['physicalDamageDealtToChampions'].append(current_match_data['physicalDamageDealtToChampions'])\r\n",
+					"    match_data_kept['physicalDamageTaken'].append(current_match_data['physicalDamageTaken'])\r\n",
+					"    match_data_kept['teamPosition'].append(current_match_data['teamPosition'])\r\n",
+					"    match_data_kept['timePlayed'].append(current_match_data['timePlayed'])\r\n",
+					"    match_data_kept['totalMinionsKilled'].append(current_match_data['totalMinionsKilled'])\r\n",
+					"    match_data_kept['visionScore'].append(current_match_data['visionScore'])\r\n",
+					"    match_data_kept['win'].append(current_match_data['win'])"
+				],
+				"execution_count": null
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"source_hidden": false,
+						"outputs_hidden": false
+					},
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"\r\n",
+					"for i in range(len(challenger_details)):\r\n",
+					"    puuid = challenger_details.iloc[i]['puuid']\r\n",
+					"    matchlist = challenger_matchlist(puuid)\r\n",
+					"    for j in range(20):\r\n",
+					"        match_data = grab_match_data(matchlist[j])\r\n",
+					"        player_data = find_player(match_data, puuid)\r\n",
+					"        assign_match_data_values(player_data)"
+				],
+				"execution_count": null
+			}
+		]
+	}
+}

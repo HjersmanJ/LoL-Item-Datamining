@@ -1,6 +1,10 @@
 {
 	"name": "dim_champion_details",
 	"properties": {
+		"linkedServiceName": {
+			"referenceName": "lolsynapse-WorkspaceDefaultStorage",
+			"type": "LinkedServiceReference"
+		},
 		"annotations": [],
 		"type": "DelimitedText",
 		"typeProperties": {
