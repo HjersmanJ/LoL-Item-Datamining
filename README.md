@@ -119,19 +119,18 @@ The 'leaguePoints' field from the incoming data stream might be strings when the
 
 Finally, since people are more interested in the top ranks more than the lower ranks, it is ordered by highest league points in descending order. Data Flows can be optimized using Spark, it can be partitioned by 'leagueID' since all tiers Masters and above are unique, and those not in those higher echelons won't have a 'leaguePoints' parameter for the ordinal function to consider. Normally ordinals are not ideal for big data, and if they are used, they should be used when the dataset is at its smallest. But in this case, it is relative to the entire dataset. If this were to be transferred for all ranks, this process can even scale in divisions and ranks.
 
-The Pipelines are relatively simple; it is just a matter of combining the data flows and running them through a scheduled or triggered process.
-
-![FactValidation](readme_links/League_Info_Validation_Pipeline.png)
-
-The League Info Validation Pipeline does just that, copying the data for each flow to have an input.
-
-![MatchDataTransformation](readme_links/Match_Data_Transformation_Pipeline.png)
-
-This one utilizes the wait function as a demonstration of how this would be orchestrated to circumvent the API rate limit. This also uses a data flow requiring two data sources to transform and join the data. The following flow is provided below.
 
 ![Fct_Match_Info_Transformation](readme_links/Fct_Match_Info_Transformation.png)
 
 This one replaces the enumerated items with the item names for one portion of the dataset for those that want a single dataset (e.g. those not experienced with joins). It will also be useful for those looking to build a simple interactive dashboard. A **(WIP)** is to provide one for learners to use.
+
+![Downloading Data to Synapse SQL Server](readme_links/Download_To_SQL.png)
+
+Here is the updated pipeline to grab challenger data. Will scale to more if Dev Key is upgraded. Much of the cleanup is done in the notebook.
+
+![Orchestration Example](readme_links/Orchestration_Example.png)
+
+To show how orchestration is done in Synapse. Another sensible orchestration at scale would be per patch. It could either be triggered by a notification or by every two weeks (easiest assuming patches are on schedule).
 
 Some samples of successful pipeline runs can be found below.
 
@@ -139,9 +138,16 @@ Some samples of successful pipeline runs can be found below.
 
 ![Transformation_Success](readme_links/Latest_Successful_Transformation_Pipeline_Run.png)
 
+## Visualization: Integration with Power BI (WIP)
+Since this is entirely on the Microsoft Azure Cloud, Power BI does have a set integration with the service. Below are screenshots on how to link to the service.
 
+![Select Synapse as Source](readme_links/Select_Synapse_as_Source.png)
+
+![Synapse Endpoint](readme_links/Synapse_Endpoint.png)
+
+![Preview Data](readme_links/Preview_Data.png)
 
 ## Summary
 In total, the project currently pulls data from 4 different sources (2 JSON, 2 APIs), uses joins where necessary, and collates them into a single dataset. Azure Synapse Analytics was used as the tech stack, which is an all-in-one tool that functions as a workspace for data engineering and analytics. In it, SQL pools are provisioned to cache the data in flow. Pipelines are triggered to ensure the runs were successful.
 
-Futures are to implement more datasets, scrape the data from more reliable websites, orchestrate pipelines to call the API to avoid the rate limit, and eventually ingest the data for data anaytics. This has been a stellar journey so far, and with the data engineering skills I've gained, I feel that I've unblocked many of the barriers I have faced as a data scientist.
+Futures are to implement more datasets, increase dataset size with longer compute or upgraded Dev Key with higher API limits, scrape the data from more reliable websites, and eventually ingest the data for data anaytics. This has been a stellar journey so far, and with the data engineering skills I've gained, I feel that I've unblocked many of the barriers I have faced as a data scientist.
