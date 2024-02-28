@@ -1,7 +1,7 @@
 {
 	"name": "Grab Daily Matches",
 	"properties": {
-		"description": "This is after the ladder reset so new entries into the challenger queue should be populated.",
+		"description": "This is after the ladder reset with some time passing to allow new games played. This usually has new players into the challenger matches dataset that wasn't there in the previous day.",
 		"annotations": [],
 		"runtimeState": "Started",
 		"pipelines": [
