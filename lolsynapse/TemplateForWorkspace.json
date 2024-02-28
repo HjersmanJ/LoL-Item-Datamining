@@ -1,0 +1,3611 @@
+{
+	"$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+	"contentVersion": "1.0.0.0",
+	"parameters": {
+		"workspaceName": {
+			"type": "string",
+			"metadata": "Workspace name",
+			"defaultValue": "lolsynapse"
+		},
+		"Synapse_Master_DB_connectionString": {
+			"type": "secureString",
+			"metadata": "Secure string for 'connectionString' of 'Synapse_Master_DB'",
+			"defaultValue": "Integrated Security=False;Encrypt=True;Connection Timeout=30;Data Source=lolsynapse.database.windows.net;Initial Catalog=master"
+		},
+		"lol-pipelines-WorkspaceDefaultSqlServer_connectionString": {
+			"type": "secureString",
+			"metadata": "Secure string for 'connectionString' of 'lol-pipelines-WorkspaceDefaultSqlServer'",
+			"defaultValue": "Integrated Security=False;Encrypt=True;Connection Timeout=30;Data Source=tcp:lol-pipelines.sql.azuresynapse.net,1433;Initial Catalog=@{linkedService().DBName}"
+		},
+		"lolsynapse-WorkspaceDefaultSqlServer_connectionString": {
+			"type": "secureString",
+			"metadata": "Secure string for 'connectionString' of 'lolsynapse-WorkspaceDefaultSqlServer'",
+			"defaultValue": "Integrated Security=False;Encrypt=True;Connection Timeout=30;Data Source=tcp:lolsynapse.sql.azuresynapse.net,1433;Initial Catalog=@{linkedService().DBName}"
+		},
+		"lolsynapse-WorkspaceDefaultStorage_properties_typeProperties_url": {
+			"type": "string",
+			"defaultValue": "https://lolitemstorage2.dfs.core.windows.net"
+		}
+	},
+	"variables": {
+		"workspaceId": "[concat('Microsoft.Synapse/workspaces/', parameters('workspaceName'))]"
+	},
+	"resources": [
+		{
+			"name": "[concat(parameters('workspaceName'), '/Creating Challenger Dataset')]",
+			"type": "Microsoft.Synapse/workspaces/pipelines",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"activities": [
+					{
+						"name": "Downloading_LoL_Data",
+						"type": "SynapseNotebook",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"notebook": {
+								"referenceName": "Downloading_Lol_Data",
+								"type": "NotebookReference"
+							},
+							"snapshot": true,
+							"sparkPool": {
+								"referenceName": "core4",
+								"type": "BigDataPoolReference"
+							},
+							"executorSize": "Small",
+							"conf": {
+								"spark.dynamicAllocation.enabled": true
+							},
+							"driverSize": "Small"
+						}
+					},
+					{
+						"name": "Fail Notebook Log",
+						"type": "Fail",
+						"dependsOn": [
+							{
+								"activity": "Downloading_LoL_Data",
+								"dependencyConditions": [
+									"Failed"
+								]
+							}
+						],
+						"userProperties": [],
+						"typeProperties": {
+							"message": "Unknown - Check Notebook for Error Message",
+							"errorCode": "006"
+						}
+					},
+					{
+						"name": "Create External Challenger Table",
+						"description": "USE LoL_Data;\n\nCREATE EXTERNAL TABLE challenger_matches\n    WITH (\n        LOCATION = '/challenger_matches',\n        DATA_SOURCE = lol_datasets,\n        FILE_FORMAT = ParquetFormat\n    )\nAS\nSELECT *,\n    '14.4.1' AS patch\nFROM \n    OPENROWSET(\n        BULK 'challenger_matches_patch_14.4.1.csv',\n        DATA_SOURCE = 'lol_datasets',\n        FORMAT = 'CSV',\n        PARSER_VERSION = '2.0',\n        HEADER_ROW = TRUE\n    ) AS item_details",
+						"type": "Script",
+						"dependsOn": [
+							{
+								"activity": "Downloading_LoL_Data",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"linkedServiceName": {
+							"referenceName": "Synapse_Master_DB",
+							"type": "LinkedServiceReference"
+						},
+						"typeProperties": {
+							"scripts": [
+								{
+									"type": "Query",
+									"text": "USE LoL_Data;\n\nCREATE EXTERNAL TABLE challenger_matches\n    WITH (\n        LOCATION = '/challenger_matches',\n        DATA_SOURCE = lol_datasets,\n        FILE_FORMAT = ParquetFormat\n    )\nAS\nSELECT *,\n    '14.4.1' AS patch\nFROM \n    OPENROWSET(\n        BULK 'challenger_matches_patch_14.4.1.csv',\n        DATA_SOURCE = 'lol_datasets',\n        FORMAT = 'CSV',\n        PARSER_VERSION = '2.0',\n        HEADER_ROW = TRUE\n    ) AS item_details"
+								}
+							],
+							"scriptBlockExecutionTimeout": "02:00:00"
+						}
+					},
+					{
+						"name": "Create External Item Details Table",
+						"type": "Script",
+						"dependsOn": [
+							{
+								"activity": "Downloading_LoL_Data",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"linkedServiceName": {
+							"referenceName": "Synapse_Master_DB",
+							"type": "LinkedServiceReference"
+						},
+						"typeProperties": {
+							"scripts": [
+								{
+									"type": "Query",
+									"text": "USE LoL_Data;\n\nCREATE EXTERNAL TABLE item_details\n    WITH (\n        LOCATION = 'lol_data/',\n        DATA_SOURCE = lol_datasets,\n        FILE_FORMAT = ParquetFormat\n    )\nAS\nSELECT *,\n    '14.4.1' AS patch\nFROM \n    OPENROWSET(\n        BULK 'item_details_patch_14.4.1.csv',\n        DATA_SOURCE = 'lol_datasets',\n        FORMAT = 'CSV',\n        PARSER_VERSION = '2.0',\n        HEADER_ROW = TRUE\n    ) AS item_details\nGROUP BY id, name;"
+								}
+							],
+							"scriptBlockExecutionTimeout": "02:00:00"
+						}
+					},
+					{
+						"name": "Wait 10 Seconds",
+						"type": "Wait",
+						"dependsOn": [
+							{
+								"activity": "Create External Item Details Table",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							},
+							{
+								"activity": "Create External Challenger Table",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"userProperties": [],
+						"typeProperties": {
+							"waitTimeInSeconds": 10
+						}
+					},
+					{
+						"name": "Join Item and Match Info",
+						"type": "Script",
+						"dependsOn": [
+							{
+								"activity": "Wait 10 Seconds",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"linkedServiceName": {
+							"referenceName": "Synapse_Master_DB",
+							"type": "LinkedServiceReference"
+						},
+						"typeProperties": {
+							"scripts": [
+								{
+									"type": "Query",
+									"text": "SELECT [assists]\n,[championName]\n,[deaths]\n,[gameEndedInEarlySurrender]\n,[gameEndedInSurrender]\n,[goldEarned]\n,[goldSpent]\n,i0.[name] AS item0\n,i1.[name] AS item1\n,i2.[name] AS item2\n,i3.[name] AS item3\n,i4.[name] AS item4\n,i5.[name] AS item5\n,i6.[name] AS item6\n,[kills]\n,[magicDamageDealtToChampions]\n,[magicDamageTaken]\n,[physicalDamageDealtToChampions]\n,[physicalDamageTaken]\n,[teamPosition]\n,[timePlayed]\n,[totalMinionsKilled]\n,[visionScore]\n,[win]\n,c.[patch]\n FROM [dbo].[challenger_matches] c\nJOIN item_details i0 ON c.item0 = i0.id \nJOIN item_details i1 ON c.item1 = i1.id \nJOIN item_details i2 ON c.item2 = i2.id \nJOIN item_details i3 ON c.item3 = i3.id \nJOIN item_details i4 ON c.item4 = i4.id \nJOIN item_details i5 ON c.item5 = i5.id \nJOIN item_details i6 ON c.item6 = i6.id "
+								}
+							],
+							"scriptBlockExecutionTimeout": "02:00:00"
+						}
+					},
+					{
+						"name": "SQL Fail Log",
+						"type": "Fail",
+						"dependsOn": [
+							{
+								"activity": "Create External Challenger Table",
+								"dependencyConditions": [
+									"Failed"
+								]
+							},
+							{
+								"activity": "Create External Item Details Table",
+								"dependencyConditions": [
+									"Failed"
+								]
+							},
+							{
+								"activity": "Join Item and Match Info",
+								"dependencyConditions": [
+									"Failed"
+								]
+							}
+						],
+						"userProperties": [],
+						"typeProperties": {
+							"message": "Issue with SQL Script. Check to ensure DB is connected and test separately.",
+							"errorCode": "005"
+						}
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {}
+				},
+				"annotations": []
+			},
+			"dependsOn": [
+				"[concat(variables('workspaceId'), '/notebooks/Downloading_Lol_Data')]",
+				"[concat(variables('workspaceId'), '/bigDataPools/core4')]",
+				"[concat(variables('workspaceId'), '/linkedServices/Synapse_Master_DB')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/Fact League Info Validation Pipeline')]",
+			"type": "Microsoft.Synapse/workspaces/pipelines",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"activities": [
+					{
+						"name": "Fct_League_Info_data",
+						"type": "Copy",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "DelimitedTextSource",
+								"storeSettings": {
+									"type": "AzureBlobFSReadSettings",
+									"recursive": true,
+									"enablePartitionDiscovery": false
+								},
+								"formatSettings": {
+									"type": "DelimitedTextReadSettings"
+								}
+							},
+							"sink": {
+								"type": "DelimitedTextSink",
+								"storeSettings": {
+									"type": "AzureBlobFSWriteSettings",
+									"copyBehavior": "MergeFiles"
+								},
+								"formatSettings": {
+									"type": "DelimitedTextWriteSettings",
+									"quoteAllText": true,
+									"fileExtension": ".txt"
+								}
+							},
+							"enableStaging": false,
+							"translator": {
+								"type": "TabularTranslator",
+								"typeConversion": true,
+								"typeConversionSettings": {
+									"allowDataTruncation": true,
+									"treatBooleanAsNumber": false
+								}
+							}
+						},
+						"inputs": [
+							{
+								"referenceName": "fct_league_info",
+								"type": "DatasetReference",
+								"parameters": {}
+							}
+						],
+						"outputs": [
+							{
+								"referenceName": "fct_league_info",
+								"type": "DatasetReference",
+								"parameters": {}
+							}
+						]
+					},
+					{
+						"name": "Fct League Info Validation",
+						"type": "ExecuteDataFlow",
+						"dependsOn": [
+							{
+								"activity": "Fct_League_Info_data",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"dataflow": {
+								"referenceName": "Fct_League_Info",
+								"type": "DataFlowReference",
+								"parameters": {},
+								"datasetParameters": {
+									"FctLeagueInfo": {},
+									"ChallengerInfoValidation": {}
+								}
+							},
+							"staging": {},
+							"compute": {
+								"coreCount": 8,
+								"computeType": "General"
+							},
+							"traceLevel": "Fine"
+						}
+					},
+					{
+						"name": "Dim Item Details",
+						"type": "Copy",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "DelimitedTextSource",
+								"storeSettings": {
+									"type": "AzureBlobFSReadSettings",
+									"recursive": true,
+									"enablePartitionDiscovery": false
+								},
+								"formatSettings": {
+									"type": "DelimitedTextReadSettings"
+								}
+							},
+							"sink": {
+								"type": "DelimitedTextSink",
+								"storeSettings": {
+									"type": "AzureBlobFSWriteSettings",
+									"copyBehavior": "MergeFiles"
+								},
+								"formatSettings": {
+									"type": "DelimitedTextWriteSettings",
+									"quoteAllText": true,
+									"fileExtension": ".txt"
+								}
+							},
+							"enableStaging": false,
+							"translator": {
+								"type": "TabularTranslator",
+								"typeConversion": true,
+								"typeConversionSettings": {
+									"allowDataTruncation": true,
+									"treatBooleanAsNumber": false
+								}
+							}
+						},
+						"inputs": [
+							{
+								"referenceName": "dim_item_info",
+								"type": "DatasetReference",
+								"parameters": {}
+							}
+						],
+						"outputs": [
+							{
+								"referenceName": "dim_item_info",
+								"type": "DatasetReference",
+								"parameters": {}
+							}
+						]
+					},
+					{
+						"name": "Dim Champion Details",
+						"type": "Copy",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "DelimitedTextSource",
+								"storeSettings": {
+									"type": "AzureBlobFSReadSettings",
+									"recursive": true,
+									"enablePartitionDiscovery": false
+								},
+								"formatSettings": {
+									"type": "DelimitedTextReadSettings"
+								}
+							},
+							"sink": {
+								"type": "DelimitedTextSink",
+								"storeSettings": {
+									"type": "AzureBlobFSWriteSettings",
+									"copyBehavior": "MergeFiles"
+								},
+								"formatSettings": {
+									"type": "DelimitedTextWriteSettings",
+									"quoteAllText": true,
+									"fileExtension": ".txt"
+								}
+							},
+							"enableStaging": false,
+							"translator": {
+								"type": "TabularTranslator",
+								"typeConversion": true,
+								"typeConversionSettings": {
+									"allowDataTruncation": true,
+									"treatBooleanAsNumber": false
+								}
+							}
+						},
+						"inputs": [
+							{
+								"referenceName": "dim_champion_details",
+								"type": "DatasetReference",
+								"parameters": {}
+							}
+						],
+						"outputs": [
+							{
+								"referenceName": "dim_champion_details",
+								"type": "DatasetReference",
+								"parameters": {}
+							}
+						]
+					},
+					{
+						"name": "Fct Match Info",
+						"type": "Copy",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "DelimitedTextSource",
+								"storeSettings": {
+									"type": "AzureBlobFSReadSettings",
+									"recursive": true,
+									"enablePartitionDiscovery": false
+								},
+								"formatSettings": {
+									"type": "DelimitedTextReadSettings"
+								}
+							},
+							"sink": {
+								"type": "DelimitedTextSink",
+								"storeSettings": {
+									"type": "AzureBlobFSWriteSettings",
+									"copyBehavior": "MergeFiles"
+								},
+								"formatSettings": {
+									"type": "DelimitedTextWriteSettings",
+									"quoteAllText": true,
+									"fileExtension": ".txt"
+								}
+							},
+							"enableStaging": false,
+							"translator": {
+								"type": "TabularTranslator",
+								"typeConversion": true,
+								"typeConversionSettings": {
+									"allowDataTruncation": true,
+									"treatBooleanAsNumber": false
+								}
+							}
+						},
+						"inputs": [
+							{
+								"referenceName": "Fct_Match_Data",
+								"type": "DatasetReference",
+								"parameters": {}
+							}
+						],
+						"outputs": [
+							{
+								"referenceName": "Fct_Match_Data",
+								"type": "DatasetReference",
+								"parameters": {}
+							}
+						]
+					},
+					{
+						"name": "Item Data Validation",
+						"type": "ExecuteDataFlow",
+						"dependsOn": [
+							{
+								"activity": "Dim Item Details",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"dataflow": {
+								"referenceName": "Dim_Item_Details_Validation",
+								"type": "DataFlowReference",
+								"parameters": {},
+								"datasetParameters": {
+									"DimItemDetailsValidation": {},
+									"ItemValidation": {}
+								}
+							},
+							"staging": {},
+							"compute": {
+								"coreCount": 8,
+								"computeType": "General"
+							},
+							"traceLevel": "Fine"
+						}
+					},
+					{
+						"name": "FCT Match Info Validation",
+						"type": "ExecuteDataFlow",
+						"dependsOn": [
+							{
+								"activity": "Fct Match Info",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"dataflow": {
+								"referenceName": "Fct_Match_Info",
+								"type": "DataFlowReference",
+								"parameters": {},
+								"datasetParameters": {
+									"FctMatchData": {},
+									"FctMatchValidation": {}
+								}
+							},
+							"staging": {},
+							"compute": {
+								"coreCount": 8,
+								"computeType": "General"
+							},
+							"traceLevel": "Fine"
+						}
+					},
+					{
+						"name": "Dim Champion Details Validation",
+						"type": "ExecuteDataFlow",
+						"dependsOn": [
+							{
+								"activity": "Dim Champion Details",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"dataflow": {
+								"referenceName": "Dim_Champion_Details",
+								"type": "DataFlowReference",
+								"parameters": {},
+								"datasetParameters": {
+									"DimChampionDetails": {},
+									"ChampionValidation": {}
+								}
+							},
+							"staging": {},
+							"compute": {
+								"coreCount": 8,
+								"computeType": "General"
+							},
+							"traceLevel": "Fine"
+						}
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {}
+				},
+				"annotations": [],
+				"lastPublishTime": "2024-01-27T02:50:26Z"
+			},
+			"dependsOn": [
+				"[concat(variables('workspaceId'), '/datasets/fct_league_info')]",
+				"[concat(variables('workspaceId'), '/dataflows/Fct_League_Info')]",
+				"[concat(variables('workspaceId'), '/datasets/dim_item_info')]",
+				"[concat(variables('workspaceId'), '/datasets/dim_champion_details')]",
+				"[concat(variables('workspaceId'), '/datasets/Fct_Match_Data')]",
+				"[concat(variables('workspaceId'), '/dataflows/Dim_Item_Details_Validation')]",
+				"[concat(variables('workspaceId'), '/dataflows/Fct_Match_Info')]",
+				"[concat(variables('workspaceId'), '/dataflows/Dim_Champion_Details')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/Match Data Transformation')]",
+			"type": "Microsoft.Synapse/workspaces/pipelines",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"activities": [
+					{
+						"name": "Validated Match Data",
+						"type": "Copy",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "DelimitedTextSource",
+								"storeSettings": {
+									"type": "AzureBlobFSReadSettings",
+									"recursive": true,
+									"enablePartitionDiscovery": false
+								},
+								"formatSettings": {
+									"type": "DelimitedTextReadSettings"
+								}
+							},
+							"sink": {
+								"type": "DelimitedTextSink",
+								"storeSettings": {
+									"type": "AzureBlobFSWriteSettings"
+								},
+								"formatSettings": {
+									"type": "DelimitedTextWriteSettings",
+									"quoteAllText": true,
+									"fileExtension": ".txt"
+								}
+							},
+							"enableStaging": false,
+							"translator": {
+								"type": "TabularTranslator",
+								"typeConversion": true,
+								"typeConversionSettings": {
+									"allowDataTruncation": true,
+									"treatBooleanAsNumber": false
+								}
+							}
+						},
+						"inputs": [
+							{
+								"referenceName": "Fct_Match_Data",
+								"type": "DatasetReference",
+								"parameters": {}
+							}
+						],
+						"outputs": [
+							{
+								"referenceName": "Fct_Match_Data",
+								"type": "DatasetReference",
+								"parameters": {}
+							}
+						]
+					},
+					{
+						"name": "Match Data Transformation",
+						"type": "ExecuteDataFlow",
+						"dependsOn": [
+							{
+								"activity": "Wait 5 Seconds",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"dataflow": {
+								"referenceName": "Fct_Match_Info_Transformation",
+								"type": "DataFlowReference",
+								"parameters": {
+									"parameter1": {
+										"value": "'@{activity('Validated Item Data').output}'",
+										"type": "Expression"
+									}
+								},
+								"datasetParameters": {
+									"FctMatchData": {},
+									"DimItemDetails": {},
+									"TransformedMatchData": {}
+								}
+							},
+							"staging": {},
+							"compute": {
+								"coreCount": 8,
+								"computeType": "General"
+							},
+							"traceLevel": "Fine"
+						}
+					},
+					{
+						"name": "Wait 5 Seconds",
+						"type": "Wait",
+						"dependsOn": [
+							{
+								"activity": "Validated Match Data",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							},
+							{
+								"activity": "Validated Item Data",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"userProperties": [],
+						"typeProperties": {
+							"waitTimeInSeconds": 5
+						}
+					},
+					{
+						"name": "Validated Item Data",
+						"type": "Copy",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "DelimitedTextSource",
+								"storeSettings": {
+									"type": "AzureBlobFSReadSettings",
+									"recursive": true,
+									"enablePartitionDiscovery": false
+								},
+								"formatSettings": {
+									"type": "DelimitedTextReadSettings"
+								}
+							},
+							"sink": {
+								"type": "DelimitedTextSink",
+								"storeSettings": {
+									"type": "AzureBlobFSWriteSettings"
+								},
+								"formatSettings": {
+									"type": "DelimitedTextWriteSettings",
+									"quoteAllText": true,
+									"fileExtension": ".txt"
+								}
+							},
+							"enableStaging": false,
+							"translator": {
+								"type": "TabularTranslator",
+								"typeConversion": true,
+								"typeConversionSettings": {
+									"allowDataTruncation": true,
+									"treatBooleanAsNumber": false
+								}
+							}
+						},
+						"inputs": [
+							{
+								"referenceName": "DelimitedText1",
+								"type": "DatasetReference",
+								"parameters": {}
+							}
+						],
+						"outputs": [
+							{
+								"referenceName": "dim_item_info",
+								"type": "DatasetReference",
+								"parameters": {}
+							}
+						]
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {}
+				},
+				"annotations": [],
+				"lastPublishTime": "2024-01-27T02:53:09Z"
+			},
+			"dependsOn": [
+				"[concat(variables('workspaceId'), '/datasets/Fct_Match_Data')]",
+				"[concat(variables('workspaceId'), '/dataflows/Fct_Match_Info_Transformation')]",
+				"[concat(variables('workspaceId'), '/datasets/DelimitedText1')]",
+				"[concat(variables('workspaceId'), '/datasets/dim_item_info')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/DelimitedText1')]",
+			"type": "Microsoft.Synapse/workspaces/datasets",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "lolsynapse-WorkspaceDefaultStorage",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "DelimitedText",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobFSLocation",
+						"fileName": "item_details_patch_14.4.1.csv",
+						"folderPath": "lol-data",
+						"fileSystem": "lolitemfs"
+					},
+					"columnDelimiter": ",",
+					"escapeChar": "\\",
+					"firstRowAsHeader": true,
+					"quoteChar": "\""
+				},
+				"schema": [
+					{
+						"name": "id",
+						"type": "String"
+					},
+					{
+						"name": "name",
+						"type": "String"
+					}
+				]
+			},
+			"dependsOn": [
+				"[concat(variables('workspaceId'), '/linkedServices/lolsynapse-WorkspaceDefaultStorage')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/DelimitedText2')]",
+			"type": "Microsoft.Synapse/workspaces/datasets",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "lolsynapse-WorkspaceDefaultStorage",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "DelimitedText",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobFSLocation",
+						"fileName": "item_details_patch_14.4.1.csv",
+						"folderPath": "lol-data",
+						"fileSystem": "lolitemfs"
+					},
+					"columnDelimiter": ",",
+					"escapeChar": "\\",
+					"firstRowAsHeader": true,
+					"quoteChar": "\""
+				},
+				"schema": [
+					{
+						"name": "id",
+						"type": "String"
+					},
+					{
+						"name": "name",
+						"type": "String"
+					}
+				]
+			},
+			"dependsOn": [
+				"[concat(variables('workspaceId'), '/linkedServices/lolsynapse-WorkspaceDefaultStorage')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/DelimitedText3')]",
+			"type": "Microsoft.Synapse/workspaces/datasets",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "lolsynapse-WorkspaceDefaultStorage",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "DelimitedText",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobFSLocation",
+						"fileName": "challenger_matches_patch_14.4.1.csv",
+						"folderPath": "lol-data",
+						"fileSystem": "lolitemfs"
+					},
+					"columnDelimiter": ",",
+					"escapeChar": "\\",
+					"firstRowAsHeader": true,
+					"quoteChar": "\""
+				},
+				"schema": [
+					{
+						"name": "assists",
+						"type": "String"
+					},
+					{
+						"name": "championName",
+						"type": "String"
+					},
+					{
+						"name": "deaths",
+						"type": "String"
+					},
+					{
+						"name": "gameEndedInEarlySurrender",
+						"type": "String"
+					},
+					{
+						"name": "gameEndedInSurrender",
+						"type": "String"
+					},
+					{
+						"name": "goldEarned",
+						"type": "String"
+					},
+					{
+						"name": "goldSpent",
+						"type": "String"
+					},
+					{
+						"name": "item0",
+						"type": "String"
+					},
+					{
+						"name": "item1",
+						"type": "String"
+					},
+					{
+						"name": "item2",
+						"type": "String"
+					},
+					{
+						"name": "item3",
+						"type": "String"
+					},
+					{
+						"name": "item4",
+						"type": "String"
+					},
+					{
+						"name": "item5",
+						"type": "String"
+					},
+					{
+						"name": "item6",
+						"type": "String"
+					},
+					{
+						"name": "kills",
+						"type": "String"
+					},
+					{
+						"name": "magicDamageDealtToChampions",
+						"type": "String"
+					},
+					{
+						"name": "magicDamageTaken",
+						"type": "String"
+					},
+					{
+						"name": "physicalDamageDealtToChampions",
+						"type": "String"
+					},
+					{
+						"name": "physicalDamageTaken",
+						"type": "String"
+					},
+					{
+						"name": "teamPosition",
+						"type": "String"
+					},
+					{
+						"name": "timePlayed",
+						"type": "String"
+					},
+					{
+						"name": "totalMinionsKilled",
+						"type": "String"
+					},
+					{
+						"name": "visionScore",
+						"type": "String"
+					},
+					{
+						"name": "win",
+						"type": "String"
+					}
+				]
+			},
+			"dependsOn": [
+				"[concat(variables('workspaceId'), '/linkedServices/lolsynapse-WorkspaceDefaultStorage')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/Fct_Match_Data')]",
+			"type": "Microsoft.Synapse/workspaces/datasets",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "lolsynapse-WorkspaceDefaultStorage",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "DelimitedText",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobFSLocation",
+						"fileName": "fct_match_data_patch_14.1.csv",
+						"folderPath": "lol_item_data",
+						"fileSystem": "lol-data"
+					},
+					"columnDelimiter": ",",
+					"escapeChar": "\\",
+					"firstRowAsHeader": true,
+					"quoteChar": "\""
+				},
+				"schema": [
+					{
+						"name": "assists",
+						"type": "String"
+					},
+					{
+						"name": "championName",
+						"type": "String"
+					},
+					{
+						"name": "deaths",
+						"type": "String"
+					},
+					{
+						"name": "gameEndedInEarlySurrender",
+						"type": "String"
+					},
+					{
+						"name": "gameEndedInSurrender",
+						"type": "String"
+					},
+					{
+						"name": "goldEarned",
+						"type": "String"
+					},
+					{
+						"name": "goldSpent",
+						"type": "String"
+					},
+					{
+						"name": "item0",
+						"type": "String"
+					},
+					{
+						"name": "item1",
+						"type": "String"
+					},
+					{
+						"name": "item2",
+						"type": "String"
+					},
+					{
+						"name": "item3",
+						"type": "String"
+					},
+					{
+						"name": "item4",
+						"type": "String"
+					},
+					{
+						"name": "item5",
+						"type": "String"
+					},
+					{
+						"name": "item6",
+						"type": "String"
+					},
+					{
+						"name": "kills",
+						"type": "String"
+					},
+					{
+						"name": "magicDamageDealtToChampions",
+						"type": "String"
+					},
+					{
+						"name": "magicDamageTaken",
+						"type": "String"
+					},
+					{
+						"name": "physicalDamageDealtToChampions",
+						"type": "String"
+					},
+					{
+						"name": "physicalDamageTaken",
+						"type": "String"
+					},
+					{
+						"name": "teamPosition",
+						"type": "String"
+					},
+					{
+						"name": "timePlayed",
+						"type": "String"
+					},
+					{
+						"name": "totalMinionsKilled",
+						"type": "String"
+					},
+					{
+						"name": "visionScore",
+						"type": "String"
+					},
+					{
+						"name": "win",
+						"type": "String"
+					}
+				]
+			},
+			"dependsOn": [
+				"[concat(variables('workspaceId'), '/linkedServices/lolsynapse-WorkspaceDefaultStorage')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/Match_Data_Transformed')]",
+			"type": "Microsoft.Synapse/workspaces/datasets",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "lolsynapse-WorkspaceDefaultStorage",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "DelimitedText",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobFSLocation",
+						"fileName": "Match_Data_Transformed_14.1.csv",
+						"folderPath": "lol_item_data",
+						"fileSystem": "lol-data"
+					},
+					"columnDelimiter": ",",
+					"escapeChar": "\\",
+					"firstRowAsHeader": true,
+					"quoteChar": "\""
+				},
+				"schema": [
+					{
+						"name": "assists",
+						"type": "String"
+					},
+					{
+						"name": "championName",
+						"type": "String"
+					},
+					{
+						"name": "deaths",
+						"type": "String"
+					},
+					{
+						"name": "gameEndedInEarlySurrender",
+						"type": "String"
+					},
+					{
+						"name": "gameEndedInSurrender",
+						"type": "String"
+					},
+					{
+						"name": "goldEarned",
+						"type": "String"
+					},
+					{
+						"name": "goldSpent",
+						"type": "String"
+					},
+					{
+						"name": "item0",
+						"type": "String"
+					},
+					{
+						"name": "item1",
+						"type": "String"
+					},
+					{
+						"name": "item2",
+						"type": "String"
+					},
+					{
+						"name": "item3",
+						"type": "String"
+					},
+					{
+						"name": "item4",
+						"type": "String"
+					},
+					{
+						"name": "item5",
+						"type": "String"
+					},
+					{
+						"name": "item6",
+						"type": "String"
+					},
+					{
+						"name": "kills",
+						"type": "String"
+					},
+					{
+						"name": "magicDamageDealtToChampions",
+						"type": "String"
+					},
+					{
+						"name": "magicDamageTaken",
+						"type": "String"
+					},
+					{
+						"name": "physicalDamageDealtToChampions",
+						"type": "String"
+					},
+					{
+						"name": "physicalDamageTaken",
+						"type": "String"
+					},
+					{
+						"name": "teamPosition",
+						"type": "String"
+					},
+					{
+						"name": "timePlayed",
+						"type": "String"
+					},
+					{
+						"name": "totalMinionsKilled",
+						"type": "String"
+					},
+					{
+						"name": "visionScore",
+						"type": "String"
+					},
+					{
+						"name": "win",
+						"type": "String"
+					}
+				]
+			},
+			"dependsOn": [
+				"[concat(variables('workspaceId'), '/linkedServices/lolsynapse-WorkspaceDefaultStorage')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/challenger_details')]",
+			"type": "Microsoft.Synapse/workspaces/datasets",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "lolsynapse-WorkspaceDefaultStorage",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "DelimitedText",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobFSLocation",
+						"fileName": "challenger_details.csv",
+						"folderPath": "lol-item-data",
+						"fileSystem": "lolitemfs"
+					},
+					"columnDelimiter": ",",
+					"escapeChar": "\\",
+					"firstRowAsHeader": true,
+					"quoteChar": "\""
+				},
+				"schema": [
+					{
+						"name": "puuid",
+						"type": "String"
+					},
+					{
+						"name": "summonerName",
+						"type": "String"
+					},
+					{
+						"name": "leaguePoints",
+						"type": "String"
+					}
+				]
+			},
+			"dependsOn": [
+				"[concat(variables('workspaceId'), '/linkedServices/lolsynapse-WorkspaceDefaultStorage')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/dim_champion_details')]",
+			"type": "Microsoft.Synapse/workspaces/datasets",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "lolsynapse-WorkspaceDefaultStorage",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "DelimitedText",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobFSLocation",
+						"fileName": "dim_champion_details_patch_14.1.csv",
+						"folderPath": "lol_item_data",
+						"fileSystem": "lol-data"
+					},
+					"columnDelimiter": ",",
+					"escapeChar": "\\",
+					"firstRowAsHeader": true,
+					"quoteChar": "\""
+				},
+				"schema": [
+					{
+						"name": "id",
+						"type": "String"
+					},
+					{
+						"name": "name",
+						"type": "String"
+					},
+					{
+						"name": "tags",
+						"type": "String"
+					}
+				]
+			},
+			"dependsOn": [
+				"[concat(variables('workspaceId'), '/linkedServices/lolsynapse-WorkspaceDefaultStorage')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/dim_item_info')]",
+			"type": "Microsoft.Synapse/workspaces/datasets",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "lolsynapse-WorkspaceDefaultStorage",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "DelimitedText",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobFSLocation",
+						"fileName": "dim_item_details_patch_14.1.csv",
+						"folderPath": "lol_item_data",
+						"fileSystem": "lol-data"
+					},
+					"columnDelimiter": ",",
+					"escapeChar": "\\",
+					"firstRowAsHeader": true,
+					"quoteChar": "\""
+				},
+				"schema": [
+					{
+						"name": "id",
+						"type": "String"
+					},
+					{
+						"name": "name",
+						"type": "String"
+					}
+				]
+			},
+			"dependsOn": [
+				"[concat(variables('workspaceId'), '/linkedServices/lolsynapse-WorkspaceDefaultStorage')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/fctChallengerDetails')]",
+			"type": "Microsoft.Synapse/workspaces/datasets",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "lolsynapse-WorkspaceDefaultStorage",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "DelimitedText",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobFSLocation",
+						"fileName": "fct_challenger_details_patch_14.1.csv",
+						"folderPath": "lol_item_data",
+						"fileSystem": "lol-data"
+					},
+					"columnDelimiter": ",",
+					"escapeChar": "\\",
+					"firstRowAsHeader": true,
+					"quoteChar": "\""
+				},
+				"schema": [
+					{
+						"name": "puuid",
+						"type": "String"
+					},
+					{
+						"name": "summonerName",
+						"type": "String"
+					},
+					{
+						"name": "leaguePoints",
+						"type": "String"
+					}
+				]
+			},
+			"dependsOn": [
+				"[concat(variables('workspaceId'), '/linkedServices/lolsynapse-WorkspaceDefaultStorage')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/fct_league_info')]",
+			"type": "Microsoft.Synapse/workspaces/datasets",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "lolsynapse-WorkspaceDefaultStorage",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "DelimitedText",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobFSLocation",
+						"fileName": "fct_league_info_patch_14.1.csv",
+						"folderPath": "lol_item_data",
+						"fileSystem": "lol-data"
+					},
+					"columnDelimiter": ",",
+					"escapeChar": "\\",
+					"firstRowAsHeader": true,
+					"quoteChar": "\""
+				},
+				"schema": [
+					{
+						"name": "puuid",
+						"type": "String"
+					},
+					{
+						"name": "summonerName",
+						"type": "String"
+					},
+					{
+						"name": "leaguePoints",
+						"type": "String"
+					}
+				]
+			},
+			"dependsOn": [
+				"[concat(variables('workspaceId'), '/linkedServices/lolsynapse-WorkspaceDefaultStorage')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/Synapse_Master_DB')]",
+			"type": "Microsoft.Synapse/workspaces/linkedServices",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"annotations": [],
+				"type": "AzureSqlDatabase",
+				"typeProperties": {
+					"connectionString": "[parameters('Synapse_Master_DB_connectionString')]"
+				},
+				"connectVia": {
+					"referenceName": "AutoResolveIntegrationRuntime",
+					"type": "IntegrationRuntimeReference"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('workspaceId'), '/integrationRuntimes/AutoResolveIntegrationRuntime')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/lol-pipelines-WorkspaceDefaultSqlServer')]",
+			"type": "Microsoft.Synapse/workspaces/linkedServices",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"parameters": {
+					"DBName": {
+						"type": "String"
+					}
+				},
+				"annotations": [],
+				"type": "AzureSqlDW",
+				"typeProperties": {
+					"connectionString": "[parameters('lol-pipelines-WorkspaceDefaultSqlServer_connectionString')]"
+				},
+				"connectVia": {
+					"referenceName": "AutoResolveIntegrationRuntime",
+					"type": "IntegrationRuntimeReference"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('workspaceId'), '/integrationRuntimes/AutoResolveIntegrationRuntime')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/lolsynapse-WorkspaceDefaultSqlServer')]",
+			"type": "Microsoft.Synapse/workspaces/linkedServices",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"parameters": {
+					"DBName": {
+						"type": "String"
+					}
+				},
+				"annotations": [],
+				"type": "AzureSqlDW",
+				"typeProperties": {
+					"connectionString": "[parameters('lolsynapse-WorkspaceDefaultSqlServer_connectionString')]"
+				},
+				"connectVia": {
+					"referenceName": "AutoResolveIntegrationRuntime",
+					"type": "IntegrationRuntimeReference"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('workspaceId'), '/integrationRuntimes/AutoResolveIntegrationRuntime')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/lolsynapse-WorkspaceDefaultStorage')]",
+			"type": "Microsoft.Synapse/workspaces/linkedServices",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"annotations": [],
+				"type": "AzureBlobFS",
+				"typeProperties": {
+					"url": "[parameters('lolsynapse-WorkspaceDefaultStorage_properties_typeProperties_url')]"
+				},
+				"connectVia": {
+					"referenceName": "AutoResolveIntegrationRuntime",
+					"type": "IntegrationRuntimeReference"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('workspaceId'), '/integrationRuntimes/AutoResolveIntegrationRuntime')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/Grab Daily Matches')]",
+			"type": "Microsoft.Synapse/workspaces/triggers",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"description": "This is after the ladder reset with some time passing to allow new games played. This usually has new players into the challenger matches dataset that wasn't there in the previous day.",
+				"annotations": [],
+				"runtimeState": "Started",
+				"pipelines": [
+					{
+						"pipelineReference": {
+							"referenceName": "Creating Challenger Dataset",
+							"type": "PipelineReference"
+						},
+						"parameters": {}
+					}
+				],
+				"type": "ScheduleTrigger",
+				"typeProperties": {
+					"recurrence": {
+						"frequency": "Day",
+						"interval": 1,
+						"startTime": "2024-02-27T05:30:00",
+						"endTime": "2024-03-15T10:30:00",
+						"timeZone": "Pacific Standard Time"
+					}
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('workspaceId'), '/pipelines/Creating Challenger Dataset')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/AutoResolveIntegrationRuntime')]",
+			"type": "Microsoft.Synapse/workspaces/integrationRuntimes",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"type": "Managed",
+				"typeProperties": {
+					"computeProperties": {
+						"location": "AutoResolve",
+						"dataFlowProperties": {
+							"computeType": "General",
+							"coreCount": 8,
+							"timeToLive": 0
+						}
+					}
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/Dim_Champion_Details')]",
+			"type": "Microsoft.Synapse/workspaces/dataflows",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"type": "MappingDataFlow",
+				"typeProperties": {
+					"sources": [
+						{
+							"dataset": {
+								"referenceName": "dim_champion_details",
+								"type": "DatasetReference"
+							},
+							"name": "DimChampionDetails"
+						}
+					],
+					"sinks": [
+						{
+							"name": "ChampionValidation"
+						}
+					],
+					"transformations": [
+						{
+							"name": "NoNullTags",
+							"description": "Each champion has at least one classification which is aliased as \"tags\". If it is empty, then they are essentially a champion without a class, which is an error."
+						},
+						{
+							"name": "RowCount",
+							"description": "Sanity check to count rows."
+						},
+						{
+							"name": "Confirm167Champions",
+							"description": "There are currently 167 champions in League. Pipeline will fail if it does not equal this number. If it is one less, then a new champ was likely released. Smolder is set to be released within a few days, so this pipeline should fail at that time."
+						}
+					],
+					"scriptLines": [
+						"source(output(",
+						"          id as string,",
+						"          name as string,",
+						"          tags as string",
+						"     ),",
+						"     allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     ignoreNoFilesFound: false) ~> DimChampionDetails",
+						"DimChampionDetails assert(expectTrue(!isNull(tags), false, 'assert1')) ~> NoNullTags",
+						"NoNullTags aggregate(groupBy(id),",
+						"     row_count = count(1)) ~> RowCount",
+						"RowCount assert(expectTrue(row_count == 167, false, 'assert1')) ~> Confirm167Champions",
+						"Confirm167Champions sink(validateSchema: false,",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true,",
+						"     store: 'cache',",
+						"     format: 'inline',",
+						"     output: false,",
+						"     saveOrder: 1) ~> ChampionValidation"
+					]
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('workspaceId'), '/datasets/dim_champion_details')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/Dim_Item_Details_Validation')]",
+			"type": "Microsoft.Synapse/workspaces/dataflows",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"type": "MappingDataFlow",
+				"typeProperties": {
+					"sources": [
+						{
+							"dataset": {
+								"referenceName": "dim_item_info",
+								"type": "DatasetReference"
+							},
+							"name": "DimItemDetailsValidation"
+						}
+					],
+					"sinks": [
+						{
+							"name": "ItemValidation"
+						}
+					],
+					"transformations": [
+						{
+							"name": "NullNames"
+						},
+						{
+							"name": "RowCount"
+						}
+					],
+					"scriptLines": [
+						"source(output(",
+						"          id as string,",
+						"          name as string",
+						"     ),",
+						"     allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     ignoreNoFilesFound: false) ~> DimItemDetailsValidation",
+						"DimItemDetailsValidation assert(expectTrue(!isNull(name), false, 'assert1')) ~> NullNames",
+						"NullNames aggregate(groupBy(id),",
+						"     column1 = count(1)) ~> RowCount",
+						"RowCount sink(validateSchema: false,",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true,",
+						"     store: 'cache',",
+						"     format: 'inline',",
+						"     output: false,",
+						"     saveOrder: 1) ~> ItemValidation"
+					]
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('workspaceId'), '/datasets/dim_item_info')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/Fct_Challenger_Details_Validation')]",
+			"type": "Microsoft.Synapse/workspaces/dataflows",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"type": "MappingDataFlow",
+				"typeProperties": {
+					"sources": [
+						{
+							"dataset": {
+								"referenceName": "fctChallengerDetails",
+								"type": "DatasetReference"
+							},
+							"name": "fctChallengerDetails"
+						}
+					],
+					"sinks": [
+						{
+							"name": "Validation"
+						},
+						{
+							"name": "NullValidation"
+						}
+					],
+					"transformations": [
+						{
+							"name": "nullNames"
+						},
+						{
+							"name": "RowCount"
+						},
+						{
+							"name": "PKconstraints"
+						}
+					],
+					"scriptLines": [
+						"source(output(",
+						"          puuid as string,",
+						"          summonerName as string,",
+						"          leaguePoints as string",
+						"     ),",
+						"     allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     ignoreNoFilesFound: false) ~> fctChallengerDetails",
+						"fctChallengerDetails assert(expectTrue(!isNull(summonerName), false, 'assert1')) ~> nullNames",
+						"PKconstraints aggregate(groupBy(puuid),",
+						"     row_count = count(1)) ~> RowCount",
+						"fctChallengerDetails aggregate(groupBy(puuid),",
+						"     each(match(name!='puuid'), $$ = first($$))) ~> PKconstraints",
+						"RowCount sink(validateSchema: false,",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true,",
+						"     store: 'cache',",
+						"     format: 'inline',",
+						"     output: false,",
+						"     saveOrder: 1) ~> Validation",
+						"nullNames sink(validateSchema: false,",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true,",
+						"     store: 'cache',",
+						"     format: 'inline',",
+						"     output: false,",
+						"     saveOrder: 1) ~> NullValidation"
+					]
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('workspaceId'), '/datasets/fctChallengerDetails')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/Fct_League_Info')]",
+			"type": "Microsoft.Synapse/workspaces/dataflows",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"type": "MappingDataFlow",
+				"typeProperties": {
+					"sources": [
+						{
+							"dataset": {
+								"referenceName": "fct_league_info",
+								"type": "DatasetReference"
+							},
+							"name": "FctLeagueInfo"
+						}
+					],
+					"sinks": [
+						{
+							"name": "ChallengerInfoValidation"
+						}
+					],
+					"transformations": [
+						{
+							"name": "nullNames"
+						},
+						{
+							"name": "RowCount"
+						},
+						{
+							"name": "ChallengerMinimumLeaguePoints",
+							"description": "Challenger League require at least 300 league points. If there are less, then they are erroneously in Challenger."
+						},
+						{
+							"name": "CastLeaguePointsToInteger",
+							"description": "League Points are incoming as a string. They need to be converted to an integer. Job will fail if there is an incompatible entry."
+						},
+						{
+							"name": "JoinDataset"
+						},
+						{
+							"name": "RemoveDuplicateKey",
+							"description": "'puuid' was duplicated for some reason. This is to take care of that issue."
+						},
+						{
+							"name": "OrderByLeaguePointsDesc",
+							"description": "Highest league point players will tend to be searched more. This orders it by the most popular."
+						}
+					],
+					"scriptLines": [
+						"source(output(",
+						"          puuid as string,",
+						"          summonerName as string,",
+						"          leaguePoints as string",
+						"     ),",
+						"     allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     ignoreNoFilesFound: false) ~> FctLeagueInfo",
+						"FctLeagueInfo assert(expectTrue(!isNull(puuid), false, 'assert1'),",
+						"     expectTrue(!isNull(summonerName), false, 'assert2')) ~> nullNames",
+						"nullNames aggregate(groupBy(puuid),",
+						"     row_count = count(1)) ~> RowCount",
+						"CastLeaguePointsToInteger assert(expectTrue(leaguePoints>=300, false, 'assert1')) ~> ChallengerMinimumLeaguePoints",
+						"FctLeagueInfo cast(output(",
+						"          leaguePoints as integer '000'",
+						"     ),",
+						"     errors: true) ~> CastLeaguePointsToInteger",
+						"ChallengerMinimumLeaguePoints, RowCount join(FctLeagueInfo@puuid == RowCount@puuid,",
+						"     joinType:'left',",
+						"     matchType:'exact',",
+						"     ignoreSpaces: false,",
+						"     broadcast: 'auto')~> JoinDataset",
+						"JoinDataset select(mapColumn(",
+						"          puuid = FctLeagueInfo@puuid,",
+						"          summonerName,",
+						"          leaguePoints",
+						"     ),",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true) ~> RemoveDuplicateKey",
+						"RemoveDuplicateKey rank(desc(leaguePoints, true),",
+						"     output(puuid as long)) ~> OrderByLeaguePointsDesc",
+						"OrderByLeaguePointsDesc sink(validateSchema: false,",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true,",
+						"     store: 'cache',",
+						"     format: 'inline',",
+						"     output: false,",
+						"     saveOrder: 1) ~> ChallengerInfoValidation"
+					]
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('workspaceId'), '/datasets/fct_league_info')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/Fct_Match_Info')]",
+			"type": "Microsoft.Synapse/workspaces/dataflows",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"type": "MappingDataFlow",
+				"typeProperties": {
+					"sources": [
+						{
+							"dataset": {
+								"referenceName": "Fct_Match_Data",
+								"type": "DatasetReference"
+							},
+							"name": "FctMatchData"
+						}
+					],
+					"sinks": [
+						{
+							"name": "FctMatchValidation"
+						}
+					],
+					"transformations": [
+						{
+							"name": "CastToInteger",
+							"description": "Certain columns should be integer. This ensures that they are."
+						},
+						{
+							"name": "CastBools",
+							"description": "Certain columns that are booleans should be cast as such."
+						},
+						{
+							"name": "NoKeyNulls",
+							"description": "None of the entries should be Null except for sometimes items, but most importantly, the participant (puuid) section and if they won or not (a key metric). The rest being Null can function fine."
+						}
+					],
+					"scriptLines": [
+						"source(output(",
+						"          assists as string,",
+						"          championName as string,",
+						"          deaths as string,",
+						"          gameEndedInEarlySurrender as string,",
+						"          gameEndedInSurrender as string,",
+						"          goldEarned as string,",
+						"          goldSpent as string,",
+						"          item0 as string,",
+						"          item1 as string,",
+						"          item2 as string,",
+						"          item3 as string,",
+						"          item4 as string,",
+						"          item5 as string,",
+						"          item6 as string,",
+						"          kills as string,",
+						"          magicDamageDealtToChampions as string,",
+						"          magicDamageTaken as string,",
+						"          physicalDamageDealtToChampions as string,",
+						"          physicalDamageTaken as string,",
+						"          teamPosition as string,",
+						"          timePlayed as string,",
+						"          totalMinionsKilled as string,",
+						"          visionScore as string,",
+						"          win as string",
+						"     ),",
+						"     allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     ignoreNoFilesFound: false) ~> FctMatchData",
+						"FctMatchData cast(output(",
+						"          assists as integer '000',",
+						"          deaths as integer '000',",
+						"          goldEarned as integer,",
+						"          goldSpent as integer,",
+						"          item0 as integer,",
+						"          item1 as integer,",
+						"          item2 as integer,",
+						"          item3 as integer,",
+						"          item4 as integer,",
+						"          item5 as integer,",
+						"          item6 as integer,",
+						"          kills as integer,",
+						"          magicDamageDealtToChampions as integer,",
+						"          magicDamageTaken as integer,",
+						"          physicalDamageDealtToChampions as integer,",
+						"          physicalDamageTaken as integer,",
+						"          timePlayed as integer,",
+						"          totalMinionsKilled as integer,",
+						"          visionScore as integer",
+						"     ),",
+						"     errors: true) ~> CastToInteger",
+						"CastToInteger cast(output(",
+						"          gameEndedInEarlySurrender as boolean,",
+						"          gameEndedInSurrender as boolean,",
+						"          win as boolean",
+						"     ),",
+						"     errors: true) ~> CastBools",
+						"FctMatchData assert(expectTrue(!isNull(win), false, 'assert1')) ~> NoKeyNulls",
+						"CastBools sink(validateSchema: false,",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true,",
+						"     store: 'cache',",
+						"     format: 'inline',",
+						"     output: false,",
+						"     saveOrder: 1) ~> FctMatchValidation"
+					]
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('workspaceId'), '/datasets/Fct_Match_Data')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/Fct_Match_Info_Transformation')]",
+			"type": "Microsoft.Synapse/workspaces/dataflows",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"type": "MappingDataFlow",
+				"typeProperties": {
+					"sources": [
+						{
+							"dataset": {
+								"referenceName": "DelimitedText3",
+								"type": "DatasetReference"
+							},
+							"name": "FctMatchData"
+						},
+						{
+							"dataset": {
+								"referenceName": "DelimitedText2",
+								"type": "DatasetReference"
+							},
+							"name": "DimItemDetails"
+						}
+					],
+					"sinks": [
+						{
+							"dataset": {
+								"referenceName": "Match_Data_Transformed",
+								"type": "DatasetReference"
+							},
+							"name": "TransformedMatchData"
+						}
+					],
+					"transformations": [
+						{
+							"name": "ReplaceNumericItemsToStrings"
+						}
+					],
+					"scriptLines": [
+						"parameters{",
+						"     parameter1 as string",
+						"}",
+						"source(output(",
+						"          assists as integer,",
+						"          championName as string,",
+						"          deaths as integer,",
+						"          gameEndedInEarlySurrender as boolean,",
+						"          gameEndedInSurrender as boolean,",
+						"          goldEarned as integer,",
+						"          goldSpent as integer,",
+						"          item0 as integer,",
+						"          item1 as integer,",
+						"          item2 as integer,",
+						"          item3 as integer,",
+						"          item4 as integer,",
+						"          item5 as integer,",
+						"          item6 as integer,",
+						"          kills as integer,",
+						"          magicDamageDealtToChampions as integer,",
+						"          magicDamageTaken as integer,",
+						"          physicalDamageDealtToChampions as integer,",
+						"          physicalDamageTaken as integer,",
+						"          teamPosition as string,",
+						"          timePlayed as integer,",
+						"          totalMinionsKilled as integer,",
+						"          visionScore as integer,",
+						"          win as boolean",
+						"     ),",
+						"     allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     ignoreNoFilesFound: false) ~> FctMatchData",
+						"source(output(",
+						"          id as integer,",
+						"          name as string",
+						"     ),",
+						"     allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     ignoreNoFilesFound: false) ~> DimItemDetails",
+						"FctMatchData, DimItemDetails join(item0 == id",
+						"     && item1 == id",
+						"     && item2 == id",
+						"     && item3 == id",
+						"     && item4 == id",
+						"     && item5 == id",
+						"     && item6 == id,",
+						"     joinType:'left',",
+						"     matchType:'exact',",
+						"     ignoreSpaces: false,",
+						"     broadcast: 'auto')~> ReplaceNumericItemsToStrings",
+						"ReplaceNumericItemsToStrings sink(allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     input(",
+						"          assists as string,",
+						"          championName as string,",
+						"          deaths as string,",
+						"          gameEndedInEarlySurrender as string,",
+						"          gameEndedInSurrender as string,",
+						"          goldEarned as string,",
+						"          goldSpent as string,",
+						"          item0 as string,",
+						"          item1 as string,",
+						"          item2 as string,",
+						"          item3 as string,",
+						"          item4 as string,",
+						"          item5 as string,",
+						"          item6 as string,",
+						"          kills as string,",
+						"          magicDamageDealtToChampions as string,",
+						"          magicDamageTaken as string,",
+						"          physicalDamageDealtToChampions as string,",
+						"          physicalDamageTaken as string,",
+						"          teamPosition as string,",
+						"          timePlayed as string,",
+						"          totalMinionsKilled as string,",
+						"          visionScore as string,",
+						"          win as string",
+						"     ),",
+						"     umask: 0022,",
+						"     preCommands: [],",
+						"     postCommands: [],",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true) ~> TransformedMatchData"
+					]
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('workspaceId'), '/datasets/DelimitedText3')]",
+				"[concat(variables('workspaceId'), '/datasets/DelimitedText2')]",
+				"[concat(variables('workspaceId'), '/datasets/Match_Data_Transformed')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/WorkspaceSystemIdentity')]",
+			"type": "Microsoft.Synapse/workspaces/credentials",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"type": "ManagedIdentity",
+				"typeProperties": {}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/Create External Challenger Matches Table')]",
+			"type": "Microsoft.Synapse/workspaces/sqlscripts",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"content": {
+					"query": "USE LoL_Data;\n\nCREATE EXTERNAL TABLE challenger_matches\n    WITH (\n        LOCATION = '/challenger_matches',\n        DATA_SOURCE = lol_datasets,\n        FILE_FORMAT = ParquetFormat\n    )\nAS\nSELECT *,\n    '14.4.1' AS patch\nFROM \n    OPENROWSET(\n        BULK 'challenger_matches_patch_14.4.1.csv',\n        DATA_SOURCE = 'lol_datasets',\n        FORMAT = 'CSV',\n        PARSER_VERSION = '2.0',\n        HEADER_ROW = TRUE\n    ) AS item_details",
+					"metadata": {
+						"language": "sql"
+					},
+					"currentConnection": {
+						"databaseName": "LoL_Data",
+						"poolName": "Built-in"
+					},
+					"resultLimit": 5000
+				},
+				"type": "SqlQuery"
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/Create External Item Details Table')]",
+			"type": "Microsoft.Synapse/workspaces/sqlscripts",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"content": {
+					"query": "USE LoL_Data;\n\nCREATE EXTERNAL TABLE item_details\n    WITH (\n        LOCATION = 'lol_data/',\n        DATA_SOURCE = lol_datasets,\n        FILE_FORMAT = ParquetFormat\n    )\nAS\nSELECT *,\n    '14.4.1' AS patch\nFROM \n    OPENROWSET(\n        BULK 'item_details_patch_14.4.1.csv',\n        DATA_SOURCE = 'lol_datasets',\n        FORMAT = 'CSV',\n        PARSER_VERSION = '2.0',\n        HEADER_ROW = TRUE\n    ) AS item_details\nGROUP BY id, name;",
+					"metadata": {
+						"language": "sql"
+					},
+					"currentConnection": {
+						"databaseName": "LoL_Data",
+						"poolName": "Built-in"
+					},
+					"resultLimit": 5000
+				},
+				"type": "SqlQuery"
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/Create_LoL_Database')]",
+			"type": "Microsoft.Synapse/workspaces/sqlscripts",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"description": "Creating Initial Database for the basic info required such as item details, players, and matches.",
+				"content": {
+					"query": "CREATE DATABASE LoL_Data\n    COLLATE Latin1_General_100_BIN2_UTF8;\nGO;\n\nUSE LoL_Data;\nGO;\n\nCREATE EXTERNAL DATA SOURCE lol_datasets  WITH (\n    LOCATION = 'abfss://lolitemfs@lolitemstorage2.dfs.core.windows.net/lol-data/'\n);\nGO;\n\nCREATE EXTERNAL FILE FORMAT ParquetFormat\n    WITH (\n            FORMAT_TYPE = PARQUET,\n            DATA_COMPRESSION = 'org.apache.hadoop.io.compress.SnappyCodec'\n    )",
+					"metadata": {
+						"language": "sql"
+					},
+					"currentConnection": {
+						"databaseName": "LoL_Data",
+						"poolName": "Built-in"
+					},
+					"resultLimit": 5000
+				},
+				"type": "SqlQuery"
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/Join Item and Match Data')]",
+			"type": "Microsoft.Synapse/workspaces/sqlscripts",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"description": "This Query is designed to replace the numeric ids for items for the names of the items.",
+				"content": {
+					"query": "SELECT [assists]\n,[championName]\n,[deaths]\n,[gameEndedInEarlySurrender]\n,[gameEndedInSurrender]\n,[goldEarned]\n,[goldSpent]\n,i0.[name] AS item0\n,i1.[name] AS item1\n,i2.[name] AS item2\n,i3.[name] AS item3\n,i4.[name] AS item4\n,i5.[name] AS item5\n,i6.[name] AS item6\n,[kills]\n,[magicDamageDealtToChampions]\n,[magicDamageTaken]\n,[physicalDamageDealtToChampions]\n,[physicalDamageTaken]\n,[teamPosition]\n,[timePlayed]\n,[totalMinionsKilled]\n,[visionScore]\n,[win]\n,c.[patch]\n FROM [dbo].[challenger_matches] c\nJOIN item_details i0 ON c.item0 = i0.id \nJOIN item_details i1 ON c.item1 = i1.id \nJOIN item_details i2 ON c.item2 = i2.id \nJOIN item_details i3 ON c.item3 = i3.id \nJOIN item_details i4 ON c.item4 = i4.id \nJOIN item_details i5 ON c.item5 = i5.id \nJOIN item_details i6 ON c.item6 = i6.id ",
+					"metadata": {
+						"language": "sql"
+					},
+					"currentConnection": {
+						"databaseName": "LoL_Data",
+						"poolName": "Built-in"
+					},
+					"resultLimit": 5000
+				},
+				"type": "SqlQuery"
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/Select TOP 100 Script')]",
+			"type": "Microsoft.Synapse/workspaces/sqlscripts",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"content": {
+					"query": "USE LoL_Data;\nGO;\n\nSELECT TOP 100 * \nFROM dbo.item_details",
+					"metadata": {
+						"language": "sql"
+					},
+					"currentConnection": {
+						"databaseName": "LoL_Data",
+						"poolName": "Built-in"
+					},
+					"resultLimit": 5000
+				},
+				"type": "SqlQuery"
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/Challenger Matches')]",
+			"type": "Microsoft.Synapse/workspaces/notebooks",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"description": "For importing challenger match data from Riot API.",
+				"folder": {
+					"name": "Importing Data"
+				},
+				"nbformat": 4,
+				"nbformat_minor": 2,
+				"sessionProperties": {
+					"driverMemory": "28g",
+					"driverCores": 4,
+					"executorMemory": "28g",
+					"executorCores": 4,
+					"numExecutors": 2,
+					"conf": {
+						"spark.dynamicAllocation.enabled": "false",
+						"spark.dynamicAllocation.minExecutors": "2",
+						"spark.dynamicAllocation.maxExecutors": "2",
+						"spark.autotune.trackingId": "66869962-f8da-4682-8bf5-6c503a3445c2"
+					}
+				},
+				"metadata": {
+					"saveOutput": true,
+					"enableDebugMode": false,
+					"kernelspec": {
+						"name": "synapse_pyspark",
+						"display_name": "python"
+					},
+					"language_info": {
+						"name": "python"
+					},
+					"sessionKeepAliveTimeout": 30
+				},
+				"cells": [
+					{
+						"cell_type": "code",
+						"source": [
+							"import requests\r\n",
+							"import json\r\n",
+							"import pandas as pd\r\n",
+							"import time"
+						],
+						"outputs": [],
+						"execution_count": null
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"api_key = ''\r\n",
+							"patch_number = '14.4.1'"
+						],
+						"outputs": [],
+						"execution_count": null
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"challenger_queue_url = 'https://na1.api.riotgames.com/lol/league/v4/challengerleagues/by-queue/RANKED_SOLO_5x5?api_key=' + api_key\r\n",
+							"r = requests.get(challenger_queue_url)\r\n",
+							"challenger_data = r.json()"
+						],
+						"outputs": [],
+						"execution_count": null
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"challenger_temp_list_2 = []\r\n",
+							"\r\n",
+							"for challenger in challenger_data['entries']:\r\n",
+							"    challenger_temp_list_1 = []\r\n",
+							"    challenger_temp_list_1.append(challenger['summonerId'])\r\n",
+							"    challenger_temp_list_1.append(challenger['summonerName'])\r\n",
+							"    challenger_temp_list_1.append(challenger['leaguePoints'])\r\n",
+							"    challenger_temp_list_2.append(challenger_temp_list_1)"
+						],
+						"outputs": [],
+						"execution_count": null
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"challenger_details = pd.DataFrame(challenger_temp_list_2)\r\n",
+							"challenger_details.rename(columns={0: \"summonerId\", 1: \"summonerName\", 2: \"leaguePoints\"}, inplace=True)"
+						],
+						"outputs": [],
+						"execution_count": null
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"for index, row in challenger_details.iterrows():\r\n",
+							"    current_summoner = row['summonerId']\r\n",
+							"    summoner_url = 'https://na1.api.riotgames.com/lol/summoner/v4/summoners/' + current_summoner  + '?' + 'api_key=' + api_key\r\n",
+							"    r = requests.get(summoner_url)\r\n",
+							"    while r.status_code == 429:\r\n",
+							"        time.sleep(20)\r\n",
+							"        r = requests.get(summoner_url)\r\n",
+							"    summoner_data = r.json()\r\n",
+							"    challenger_details.replace(current_summoner, summoner_data['puuid'], inplace=True)"
+						],
+						"outputs": [],
+						"execution_count": null
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"challenger_details.rename(columns={\"summonerId\": \"puuid\"}, inplace=True)\r\n",
+							"challenger_details_filepath = f'abfss://lolitemfs@lolitemstorage2.dfs.core.windows.net/lol-data/challenger_details_patch_{patch_number}.csv'\r\n",
+							"challenger_details.to_csv(challenger_details_filepath, index=False)"
+						],
+						"outputs": [],
+						"execution_count": null
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"match_data_kept = {\r\n",
+							"    'assists': [],\r\n",
+							"    'championName': [],\r\n",
+							"    'deaths': [],\r\n",
+							"    'gameEndedInEarlySurrender': [],\r\n",
+							"    'gameEndedInSurrender': [],\r\n",
+							"    'goldEarned': [],\r\n",
+							"    'goldSpent': [],\r\n",
+							"    'item0': [],\r\n",
+							"    'item1': [],\r\n",
+							"    'item2': [],\r\n",
+							"    'item3': [],\r\n",
+							"    'item4': [],\r\n",
+							"    'item5': [],\r\n",
+							"    'item6': [],\r\n",
+							"    'kills': [],\r\n",
+							"    'magicDamageDealtToChampions': [],\r\n",
+							"    'magicDamageTaken': [],\r\n",
+							"    'physicalDamageDealtToChampions': [],\r\n",
+							"    'physicalDamageTaken': [],\r\n",
+							"    'teamPosition': [],\r\n",
+							"    'timePlayed': [],\r\n",
+							"    'totalMinionsKilled': [],\r\n",
+							"    'visionScore': [],\r\n",
+							"    'win': []\r\n",
+							"}"
+						],
+						"outputs": [],
+						"execution_count": null
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"def assign_match_data_values(current_match_data):\r\n",
+							"    match_data_kept['assists'].append(current_match_data['assists'])\r\n",
+							"    match_data_kept['championName'].append(current_match_data['championName'])\r\n",
+							"    match_data_kept['deaths'].append(current_match_data['deaths'])\r\n",
+							"    match_data_kept['gameEndedInEarlySurrender'].append(current_match_data['gameEndedInEarlySurrender'])\r\n",
+							"    match_data_kept['gameEndedInSurrender'].append(current_match_data['gameEndedInSurrender'])\r\n",
+							"    match_data_kept['goldEarned'].append(current_match_data['goldEarned'])\r\n",
+							"    match_data_kept['goldSpent'].append(current_match_data['goldSpent'])\r\n",
+							"                                        \r\n",
+							"    match_data_kept['item0'].append(current_match_data['item0'])\r\n",
+							"    match_data_kept['item1'].append(current_match_data['item1'])\r\n",
+							"    match_data_kept['item2'].append(current_match_data['item2'])\r\n",
+							"    match_data_kept['item3'].append(current_match_data['item3'])\r\n",
+							"    match_data_kept['item4'].append(current_match_data['item4'])\r\n",
+							"    match_data_kept['item5'].append(current_match_data['item5'])\r\n",
+							"    match_data_kept['item6'].append(current_match_data['item6'])\r\n",
+							"                                    \r\n",
+							"    match_data_kept['kills'].append(current_match_data['kills'])\r\n",
+							"    match_data_kept['magicDamageDealtToChampions'].append(current_match_data['magicDamageDealtToChampions'])\r\n",
+							"    match_data_kept['magicDamageTaken'].append(current_match_data['magicDamageTaken'])\r\n",
+							"    match_data_kept['physicalDamageDealtToChampions'].append(current_match_data['physicalDamageDealtToChampions'])\r\n",
+							"    match_data_kept['physicalDamageTaken'].append(current_match_data['physicalDamageTaken'])\r\n",
+							"    match_data_kept['teamPosition'].append(current_match_data['teamPosition'])\r\n",
+							"    match_data_kept['timePlayed'].append(current_match_data['timePlayed'])\r\n",
+							"    match_data_kept['totalMinionsKilled'].append(current_match_data['totalMinionsKilled'])\r\n",
+							"    match_data_kept['visionScore'].append(current_match_data['visionScore'])\r\n",
+							"    match_data_kept['win'].append(current_match_data['win'])"
+						],
+						"outputs": [],
+						"execution_count": null
+					}
+				]
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/Converting to Full Datasets')]",
+			"type": "Microsoft.Synapse/workspaces/notebooks",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"folder": {
+					"name": "Importing Data"
+				},
+				"nbformat": 4,
+				"nbformat_minor": 2,
+				"sessionProperties": {
+					"driverMemory": "28g",
+					"driverCores": 4,
+					"executorMemory": "28g",
+					"executorCores": 4,
+					"numExecutors": 2,
+					"conf": {
+						"spark.dynamicAllocation.enabled": "false",
+						"spark.dynamicAllocation.minExecutors": "2",
+						"spark.dynamicAllocation.maxExecutors": "2",
+						"spark.autotune.trackingId": "da9bfb72-5665-4a78-9a1d-51c504f730b2"
+					}
+				},
+				"metadata": {
+					"saveOutput": true,
+					"enableDebugMode": false,
+					"kernelspec": {
+						"name": "synapse_pyspark",
+						"display_name": "python"
+					},
+					"language_info": {
+						"name": "python"
+					},
+					"sessionKeepAliveTimeout": 30
+				},
+				"cells": [
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"import requests\r\n",
+							"import json\r\n",
+							"import pandas as pd\r\n",
+							"import time"
+						],
+						"outputs": [],
+						"execution_count": null
+					},
+					{
+						"cell_type": "code",
+						"source": [
+							"api_key = ''\r\n",
+							"patch_number = '14.4.1'"
+						],
+						"outputs": [],
+						"execution_count": null
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"def challenger_matchlist(current_puuid):\r\n",
+							"    challenger_matchlist_url = 'https://americas.api.riotgames.com/lol/match/v5/matches/by-puuid/' + current_puuid + '/ids?queue=420&start=0&count=20&api_key=' + api_key\r\n",
+							"    r = requests.get(challenger_matchlist_url)\r\n",
+							"    matchlist_data = r.json()\r\n",
+							"    print(matchlist_data)\r\n",
+							"    return matchlist_data"
+						],
+						"outputs": [],
+						"execution_count": null
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"def grab_match_data(current_match):\r\n",
+							"    #current_match = 'NA1_4900084850'\r\n",
+							"    match_url = 'https://americas.api.riotgames.com/lol/match/v5/matches/' + current_match + '?api_key=' + api_key\r\n",
+							"    r = requests.get(match_url)\r\n",
+							"    match_data = r.json()\r\n",
+							"    print(match_data)\r\n",
+							"    return match_data"
+						],
+						"outputs": [],
+						"execution_count": null
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"def find_player(match_data, puuid):\r\n",
+							"    participant_list = match_data['metadata']['participants']\r\n",
+							"    player_index = participant_list.index(puuid)\r\n",
+							"    player_info = match_data['info']['participants'][player_index]\r\n",
+							"    return player_info"
+						],
+						"outputs": [],
+						"execution_count": null
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"match_data_kept = {\r\n",
+							"    'assists': [],\r\n",
+							"    'championName': [],\r\n",
+							"    'deaths': [],\r\n",
+							"    'gameEndedInEarlySurrender': [],\r\n",
+							"    'gameEndedInSurrender': [],\r\n",
+							"    'goldEarned': [],\r\n",
+							"    'goldSpent': [],\r\n",
+							"    'item0': [],\r\n",
+							"    'item1': [],\r\n",
+							"    'item2': [],\r\n",
+							"    'item3': [],\r\n",
+							"    'item4': [],\r\n",
+							"    'item5': [],\r\n",
+							"    'item6': [],\r\n",
+							"    'kills': [],\r\n",
+							"    'magicDamageDealtToChampions': [],\r\n",
+							"    'magicDamageTaken': [],\r\n",
+							"    'physicalDamageDealtToChampions': [],\r\n",
+							"    'physicalDamageTaken': [],\r\n",
+							"    'teamPosition': [],\r\n",
+							"    'timePlayed': [],\r\n",
+							"    'totalMinionsKilled': [],\r\n",
+							"    'visionScore': [],\r\n",
+							"    'win': []\r\n",
+							"}"
+						],
+						"outputs": [],
+						"execution_count": null
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"def assign_match_data_values(current_match_data):\r\n",
+							"    match_data_kept['assists'].append(current_match_data['assists'])\r\n",
+							"    match_data_kept['championName'].append(current_match_data['championName'])\r\n",
+							"    match_data_kept['deaths'].append(current_match_data['deaths'])\r\n",
+							"    match_data_kept['gameEndedInEarlySurrender'].append(current_match_data['gameEndedInEarlySurrender'])\r\n",
+							"    match_data_kept['gameEndedInSurrender'].append(current_match_data['gameEndedInSurrender'])\r\n",
+							"    match_data_kept['goldEarned'].append(current_match_data['goldEarned'])\r\n",
+							"    match_data_kept['goldSpent'].append(current_match_data['goldSpent'])\r\n",
+							"                                        \r\n",
+							"    match_data_kept['item0'].append(current_match_data['item0'])\r\n",
+							"    match_data_kept['item1'].append(current_match_data['item1'])\r\n",
+							"    match_data_kept['item2'].append(current_match_data['item2'])\r\n",
+							"    match_data_kept['item3'].append(current_match_data['item3'])\r\n",
+							"    match_data_kept['item4'].append(current_match_data['item4'])\r\n",
+							"    match_data_kept['item5'].append(current_match_data['item5'])\r\n",
+							"    match_data_kept['item6'].append(current_match_data['item6'])\r\n",
+							"                                    \r\n",
+							"    match_data_kept['kills'].append(current_match_data['kills'])\r\n",
+							"    match_data_kept['magicDamageDealtToChampions'].append(current_match_data['magicDamageDealtToChampions'])\r\n",
+							"    match_data_kept['magicDamageTaken'].append(current_match_data['magicDamageTaken'])\r\n",
+							"    match_data_kept['physicalDamageDealtToChampions'].append(current_match_data['physicalDamageDealtToChampions'])\r\n",
+							"    match_data_kept['physicalDamageTaken'].append(current_match_data['physicalDamageTaken'])\r\n",
+							"    match_data_kept['teamPosition'].append(current_match_data['teamPosition'])\r\n",
+							"    match_data_kept['timePlayed'].append(current_match_data['timePlayed'])\r\n",
+							"    match_data_kept['totalMinionsKilled'].append(current_match_data['totalMinionsKilled'])\r\n",
+							"    match_data_kept['visionScore'].append(current_match_data['visionScore'])\r\n",
+							"    match_data_kept['win'].append(current_match_data['win'])"
+						],
+						"outputs": [],
+						"execution_count": null
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"\r\n",
+							"for i in range(len(challenger_details)):\r\n",
+							"    puuid = challenger_details.iloc[i]['puuid']\r\n",
+							"    matchlist = challenger_matchlist(puuid)\r\n",
+							"    for j in range(20):\r\n",
+							"        match_data = grab_match_data(matchlist[j])\r\n",
+							"        player_data = find_player(match_data, puuid)\r\n",
+							"        assign_match_data_values(player_data)"
+						],
+						"outputs": [],
+						"execution_count": null
+					}
+				]
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/Downloading_Lol_Data')]",
+			"type": "Microsoft.Synapse/workspaces/notebooks",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"folder": {
+					"name": "Importing Data"
+				},
+				"nbformat": 4,
+				"nbformat_minor": 2,
+				"bigDataPool": {
+					"referenceName": "core4",
+					"type": "BigDataPoolReference"
+				},
+				"sessionProperties": {
+					"driverMemory": "28g",
+					"driverCores": 4,
+					"executorMemory": "28g",
+					"executorCores": 4,
+					"numExecutors": 2,
+					"runAsWorkspaceSystemIdentity": false,
+					"conf": {
+						"spark.dynamicAllocation.enabled": "false",
+						"spark.dynamicAllocation.minExecutors": "2",
+						"spark.dynamicAllocation.maxExecutors": "2",
+						"spark.autotune.trackingId": "d575cfb1-18d9-4a3c-8094-6685def9b2f0"
+					}
+				},
+				"metadata": {
+					"saveOutput": true,
+					"enableDebugMode": false,
+					"kernelspec": {
+						"name": "synapse_pyspark",
+						"display_name": "Synapse PySpark"
+					},
+					"language_info": {
+						"name": "python"
+					},
+					"a365ComputeOptions": {
+						"id": "/subscriptions/bf8dcb7f-59aa-4187-9122-e6df9c1e7d7d/resourceGroups/LoL-Item-RG/providers/Microsoft.Synapse/workspaces/lolsynapse/bigDataPools/core4",
+						"name": "core4",
+						"type": "Spark",
+						"endpoint": "https://lolsynapse.dev.azuresynapse.net/livyApi/versions/2019-11-01-preview/sparkPools/core4",
+						"auth": {
+							"type": "AAD",
+							"authResource": "https://dev.azuresynapse.net"
+						},
+						"sparkVersion": "3.3",
+						"nodeCount": 10,
+						"cores": 4,
+						"memory": 28
+					},
+					"sessionKeepAliveTimeout": 30
+				},
+				"cells": [
+					{
+						"cell_type": "code",
+						"source": [
+							"import requests\n",
+							"import json\n",
+							"import pandas as pd\n",
+							"import time"
+						],
+						"outputs": [],
+						"execution_count": 1
+					},
+					{
+						"cell_type": "markdown",
+						"source": [
+							"Before we begin, we must start with legal boilerplate required by Riot Games:\n",
+							"\n",
+							">[Your Product Name] is not endorsed by Riot Games and does not reflect the views or opinions of Riot Games or anyone officially involved in producing or managing Riot Games properties. Riot Games and all associated properties are trademarks or registered trademarks of Riot Games, Inc"
+						]
+					},
+					{
+						"cell_type": "code",
+						"source": [
+							"api_key = 'RGAPI-8526afc2-81e8-49ce-aa53-59a94379c0a0'\r\n",
+							"patch_number = '14.4.1'"
+						],
+						"outputs": [],
+						"execution_count": 2
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"outputs_hidden": true
+							}
+						},
+						"source": [
+							"item_url = f'https://ddragon.leagueoflegends.com/cdn/{patch_number}/data/en_US/item.json'\n",
+							"r = requests.get(item_url)\n",
+							"item_data = r.json()\n",
+							"print(item_data)"
+						],
+						"outputs": [],
+						"execution_count": 57
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"outputs_hidden": true
+							}
+						},
+						"source": [
+							"item_temp_list_2 = []\n",
+							"\n",
+							"for item in item_data['data']:\n",
+							"    item_temp_list_1 = []\n",
+							"    item_temp_list_1.append(item)\n",
+							"    item_temp_list_1.append(item_data['data'][item]['name'])\n",
+							"    item_temp_list_2.append(item_temp_list_1)\n",
+							"\n",
+							"print(item_temp_list_2)"
+						],
+						"outputs": [],
+						"execution_count": 58
+					},
+					{
+						"cell_type": "markdown",
+						"source": [
+							"Source to grow lists then add to dataframe: https://stackoverflow.com/questions/13784192/creating-an-empty-pandas-dataframe-and-then-filling-it"
+						]
+					},
+					{
+						"cell_type": "code",
+						"source": [
+							"item_details = pd.DataFrame(item_temp_list_2)\n",
+							"item_details.rename(columns={0: \"id\", 1: \"name\"}, inplace=True)\n",
+							"item_details.head()"
+						],
+						"outputs": [],
+						"execution_count": 59
+					},
+					{
+						"cell_type": "code",
+						"source": [
+							"item_details_filepath = f'abfss://lolitemfs@lolitemstorage2.dfs.core.windows.net/lol-data/item_details_patch_{patch_number}.csv'\n",
+							"item_details.to_csv(item_details_filepath, index=False)"
+						],
+						"outputs": [],
+						"execution_count": 60
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"outputs_hidden": true
+							}
+						},
+						"source": [
+							"champion_url = f'https://ddragon.leagueoflegends.com/cdn/{patch_number}/data/en_US/champion.json'\n",
+							"r = requests.get(champion_url)\n",
+							"champion_data = r.json()\n",
+							"print(champion_data)"
+						],
+						"outputs": [],
+						"execution_count": 61
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"outputs_hidden": true
+							}
+						},
+						"source": [
+							"champ_temp_list_2 = []\n",
+							"\n",
+							"for champion in champion_data['data']:\n",
+							"    champ_temp_list_1 = []\n",
+							"    champ_temp_list_1.append(champion_data['data'][champion]['key'])\n",
+							"    champ_temp_list_1.append(champion_data['data'][champion]['name'])\n",
+							"    champ_temp_list_1.append(champion_data['data'][champion]['tags'])\n",
+							"    champ_temp_list_2.append(champ_temp_list_1)\n",
+							"\n",
+							"print(champ_temp_list_2)"
+						],
+						"outputs": [],
+						"execution_count": 62
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"outputs_hidden": true
+							}
+						},
+						"source": [
+							"champion_details = pd.DataFrame(champ_temp_list_2)\n",
+							"champion_details.rename(columns={0: \"id\", 1: \"name\", 2: \"tags\"}, inplace=True)\n",
+							"champion_details"
+						],
+						"outputs": [],
+						"execution_count": 63
+					},
+					{
+						"cell_type": "code",
+						"source": [
+							"champion_details_filepath = f'abfss://lolitemfs@lolitemstorage2.dfs.core.windows.net/lol-data/champion_details_patch_{patch_number}.csv'\n",
+							"champion_details.to_csv(champion_details_filepath, index=False)"
+						],
+						"outputs": [],
+						"execution_count": 64
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"outputs_hidden": true
+							}
+						},
+						"source": [
+							"challenger_queue_url = 'https://na1.api.riotgames.com/lol/league/v4/challengerleagues/by-queue/RANKED_SOLO_5x5?api_key=' + api_key\n",
+							"r = requests.get(challenger_queue_url)\n",
+							"challenger_data = r.json()\n",
+							"print(challenger_data)"
+						],
+						"outputs": [],
+						"execution_count": 3
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"outputs_hidden": true
+							}
+						},
+						"source": [
+							"challenger_temp_list_2 = []\n",
+							"\n",
+							"for challenger in challenger_data['entries']:\n",
+							"    challenger_temp_list_1 = []\n",
+							"    challenger_temp_list_1.append(challenger['summonerId'])\n",
+							"    challenger_temp_list_1.append(challenger['summonerName'])\n",
+							"    challenger_temp_list_1.append(challenger['leaguePoints'])\n",
+							"    challenger_temp_list_2.append(challenger_temp_list_1)\n",
+							"\n",
+							"print(challenger_temp_list_2)"
+						],
+						"outputs": [],
+						"execution_count": 4
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"outputs_hidden": false
+							}
+						},
+						"source": [
+							"challenger_details = pd.DataFrame(challenger_temp_list_2)\n",
+							"challenger_details.rename(columns={0: \"summonerId\", 1: \"summonerName\", 2: \"leaguePoints\"}, inplace=True)\n",
+							"challenger_details"
+						],
+						"outputs": [],
+						"execution_count": 8
+					},
+					{
+						"cell_type": "markdown",
+						"source": [
+							"We have a *NULL* on summonerID 'baaP8_5bWcItUxuBN6oGB4KXQiAv9iYmuXxGgRRmcBRACHc'. My suspicion is that they are using foreign characters that cannot be recognized. Even the native Riot API turns up a blank summonerName, making this difficult to diagnose. There are methods, but the best way is to simply circumvent using summonerName and opt for summonerId.\n",
+							"\n",
+							"Regardless, Riot has deprecated many of their endpoints off of using summonerID. We must convert the summonerId to the currently used parameter: puuid.\n",
+							"\n",
+							"To do that, we must go through the summoner-v4 endpoint. However, due to the request limit, this will take a large amount of time when we deal with big data. The request limit is as follows...\n",
+							"> The rate limit for a personal keys is by design very limited:\n",
+							"  > - 20 requests every 1 second\n",
+							"  > - 100 requests every 2 minutes\n",
+							"\n",
+							"A sleep function will suffice to ensure the limit is not hit. Can run this in one's sleep and transcribe somewhere north of 15k accounts in that time assuming no errors. In the future, the more proper way to do this is through frequent orchestration to minimize errors."
+						]
+					},
+					{
+						"cell_type": "code",
+						"source": [
+							"for index, row in challenger_details.iterrows():\n",
+							"    current_summoner = row['summonerId']\n",
+							"    summoner_url = 'https://na1.api.riotgames.com/lol/summoner/v4/summoners/' + current_summoner  + '?' + 'api_key=' + api_key\n",
+							"    r = requests.get(summoner_url)\n",
+							"    while r.status_code == 429:\n",
+							"        time.sleep(20)\n",
+							"        r = requests.get(summoner_url)\n",
+							"    summoner_data = r.json()\n",
+							"    challenger_details.replace(current_summoner, summoner_data['puuid'], inplace=True)\n",
+							"    \n",
+							"\n",
+							"challenger_details.head()"
+						],
+						"outputs": [],
+						"execution_count": 9
+					},
+					{
+						"cell_type": "markdown",
+						"source": [
+							"That should work. Now to rename it to the proper field."
+						]
+					},
+					{
+						"cell_type": "code",
+						"source": [
+							"challenger_details.rename(columns={\"summonerId\": \"puuid\"}, inplace=True)\n",
+							"challenger_details.head()"
+						],
+						"outputs": [],
+						"execution_count": 10
+					},
+					{
+						"cell_type": "code",
+						"source": [
+							"challenger_details_filepath = f'abfss://lolitemfs@lolitemstorage2.dfs.core.windows.net/lol-data/challenger_details_patch_{patch_number}.csv'\n",
+							"challenger_details.to_csv(challenger_details_filepath, index=False)"
+						],
+						"outputs": [],
+						"execution_count": 85
+					},
+					{
+						"cell_type": "markdown",
+						"source": [
+							"Now for the last one: the matches. The process will start the same as the previous methods. We will go with the default of grabbing the most recent 20 matches in ranked 5v5 solo queue (queue id = 420). A future is to integrate the Queue API to search by different queues (e.g. ARAM, Rotating Game Modes, etc.)."
+						]
+					},
+					{
+						"cell_type": "code",
+						"source": [
+							"def challenger_matchlist(current_puuid):\n",
+							"    challenger_matchlist_url = 'https://americas.api.riotgames.com/lol/match/v5/matches/by-puuid/' + current_puuid + '/ids?queue=420&start=0&count=20&api_key=' + api_key\n",
+							"    r = requests.get(challenger_matchlist_url)\n",
+							"    while r.status_code == 429:\n",
+							"        time.sleep(20)\n",
+							"        r = requests.get(challenger_matchlist_url)\n",
+							"    matchlist_data = r.json()\n",
+							"    print(matchlist_data)\n",
+							"    return matchlist_data"
+						],
+						"outputs": [],
+						"execution_count": 12
+					},
+					{
+						"cell_type": "code",
+						"source": [
+							"def grab_match_data(current_match):\n",
+							"    #current_match = 'NA1_4900084850'\n",
+							"    match_url = 'https://americas.api.riotgames.com/lol/match/v5/matches/' + current_match + '?api_key=' + api_key\n",
+							"    r = requests.get(match_url)\n",
+							"    while r.status_code == 429:\n",
+							"        time.sleep(20)\n",
+							"        r = requests.get(match_url)\n",
+							"        print(r.status_code)\n",
+							"    match_data = r.json()\n",
+							"    #print(match_data)\n",
+							"    return match_data"
+						],
+						"outputs": [],
+						"execution_count": 21
+					},
+					{
+						"cell_type": "code",
+						"source": [
+							"def find_player(match_data, puuid):\n",
+							"    participant_list = match_data['metadata']['participants']\n",
+							"    player_index = participant_list.index(puuid)\n",
+							"    player_info = match_data['info']['participants'][player_index]\n",
+							"    return player_info"
+						],
+						"outputs": [],
+						"execution_count": 14
+					},
+					{
+						"cell_type": "markdown",
+						"source": [
+							"Due to contraints on API requests and time, this notebook will for now function off of a single puuid. A future is to iterate through the entire list of puuids to jumpstart the big data process."
+						]
+					},
+					{
+						"cell_type": "code",
+						"source": [
+							"match_data_kept = {\n",
+							"    'assists': [],\n",
+							"    'championName': [],\n",
+							"    'deaths': [],\n",
+							"    'gameEndedInEarlySurrender': [],\n",
+							"    'gameEndedInSurrender': [],\n",
+							"    'goldEarned': [],\n",
+							"    'goldSpent': [],\n",
+							"    'item0': [],\n",
+							"    'item1': [],\n",
+							"    'item2': [],\n",
+							"    'item3': [],\n",
+							"    'item4': [],\n",
+							"    'item5': [],\n",
+							"    'item6': [],\n",
+							"    'kills': [],\n",
+							"    'magicDamageDealtToChampions': [],\n",
+							"    'magicDamageTaken': [],\n",
+							"    'physicalDamageDealtToChampions': [],\n",
+							"    'physicalDamageTaken': [],\n",
+							"    'teamPosition': [],\n",
+							"    'timePlayed': [],\n",
+							"    'totalMinionsKilled': [],\n",
+							"    'visionScore': [],\n",
+							"    'win': []\n",
+							"}"
+						],
+						"outputs": [],
+						"execution_count": 15
+					},
+					{
+						"cell_type": "code",
+						"source": [
+							"def assign_match_data_values(current_match_data):\n",
+							"    match_data_kept['assists'].append(current_match_data['assists'])\n",
+							"    match_data_kept['championName'].append(current_match_data['championName'])\n",
+							"    match_data_kept['deaths'].append(current_match_data['deaths'])\n",
+							"    match_data_kept['gameEndedInEarlySurrender'].append(current_match_data['gameEndedInEarlySurrender'])\n",
+							"    match_data_kept['gameEndedInSurrender'].append(current_match_data['gameEndedInSurrender'])\n",
+							"    match_data_kept['goldEarned'].append(current_match_data['goldEarned'])\n",
+							"    match_data_kept['goldSpent'].append(current_match_data['goldSpent'])\n",
+							"                                        \n",
+							"    match_data_kept['item0'].append(current_match_data['item0'])\n",
+							"    match_data_kept['item1'].append(current_match_data['item1'])\n",
+							"    match_data_kept['item2'].append(current_match_data['item2'])\n",
+							"    match_data_kept['item3'].append(current_match_data['item3'])\n",
+							"    match_data_kept['item4'].append(current_match_data['item4'])\n",
+							"    match_data_kept['item5'].append(current_match_data['item5'])\n",
+							"    match_data_kept['item6'].append(current_match_data['item6'])\n",
+							"                                    \n",
+							"    match_data_kept['kills'].append(current_match_data['kills'])\n",
+							"    match_data_kept['magicDamageDealtToChampions'].append(current_match_data['magicDamageDealtToChampions'])\n",
+							"    match_data_kept['magicDamageTaken'].append(current_match_data['magicDamageTaken'])\n",
+							"    match_data_kept['physicalDamageDealtToChampions'].append(current_match_data['physicalDamageDealtToChampions'])\n",
+							"    match_data_kept['physicalDamageTaken'].append(current_match_data['physicalDamageTaken'])\n",
+							"    match_data_kept['teamPosition'].append(current_match_data['teamPosition'])\n",
+							"    match_data_kept['timePlayed'].append(current_match_data['timePlayed'])\n",
+							"    match_data_kept['totalMinionsKilled'].append(current_match_data['totalMinionsKilled'])\n",
+							"    match_data_kept['visionScore'].append(current_match_data['visionScore'])\n",
+							"    match_data_kept['win'].append(current_match_data['win'])"
+						],
+						"outputs": [],
+						"execution_count": 16
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"print(len(challenger_details))"
+						],
+						"outputs": [],
+						"execution_count": 23
+					},
+					{
+						"cell_type": "markdown",
+						"metadata": {
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"For now, it grabs the 20 most recent matches. Will scale with orchestration to allow far more, especially if Dev Key is upgraded."
+						]
+					},
+					{
+						"cell_type": "code",
+						"source": [
+							"\n",
+							"for i in range(len(challenger_details)):\n",
+							"    puuid = challenger_details.iloc[i]['puuid']\n",
+							"    matchlist = challenger_matchlist(puuid)\n",
+							"    for j in range(20):\n",
+							"        match_data = grab_match_data(matchlist[j])\n",
+							"        player_data = find_player(match_data, puuid)\n",
+							"        assign_match_data_values(player_data)"
+						],
+						"outputs": [],
+						"execution_count": 22
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"outputs_hidden": true
+							}
+						},
+						"source": [
+							"match_data_kept"
+						],
+						"outputs": [],
+						"execution_count": 18
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"outputs_hidden": true
+							}
+						},
+						"source": [
+							"match_dataframe = pd.DataFrame(match_data_kept)\n",
+							"match_dataframe"
+						],
+						"outputs": [],
+						"execution_count": 19
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"challenger_matches_filepath = f'abfss://lolitemfs@lolitemstorage2.dfs.core.windows.net/lol-data/challenger_matches_patch_{patch_number}.csv'\r\n",
+							"match_dataframe.to_csv(challenger_matches_filepath, index=False)"
+						],
+						"outputs": [],
+						"execution_count": 84
+					}
+				]
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/LoL ETL')]",
+			"type": "Microsoft.Synapse/workspaces/notebooks",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"nbformat": 4,
+				"nbformat_minor": 2,
+				"sessionProperties": {
+					"driverMemory": "28g",
+					"driverCores": 4,
+					"executorMemory": "28g",
+					"executorCores": 4,
+					"numExecutors": 2,
+					"runAsWorkspaceSystemIdentity": false,
+					"conf": {
+						"spark.dynamicAllocation.enabled": "false",
+						"spark.dynamicAllocation.minExecutors": "2",
+						"spark.dynamicAllocation.maxExecutors": "2",
+						"spark.autotune.trackingId": "77005dcd-8352-4aaf-b0b2-204164022e80"
+					}
+				},
+				"metadata": {
+					"saveOutput": true,
+					"synapse_widget": {
+						"version": "0.1"
+					},
+					"enableDebugMode": false,
+					"kernelspec": {
+						"name": "synapse_pyspark",
+						"display_name": "python"
+					},
+					"language_info": {
+						"name": "python"
+					},
+					"sessionKeepAliveTimeout": 30
+				},
+				"cells": [
+					{
+						"cell_type": "code",
+						"source": [
+							""
+						],
+						"outputs": []
+					}
+				]
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/Web Scraping LoL items')]",
+			"type": "Microsoft.Synapse/workspaces/notebooks",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"folder": {
+					"name": "Importing Data"
+				},
+				"nbformat": 4,
+				"nbformat_minor": 2,
+				"sessionProperties": {
+					"driverMemory": "28g",
+					"driverCores": 4,
+					"executorMemory": "28g",
+					"executorCores": 4,
+					"numExecutors": 2,
+					"runAsWorkspaceSystemIdentity": false,
+					"conf": {
+						"spark.dynamicAllocation.enabled": "false",
+						"spark.dynamicAllocation.minExecutors": "2",
+						"spark.dynamicAllocation.maxExecutors": "2",
+						"spark.autotune.trackingId": "2736e2d3-867c-4fe8-86b4-14d89504a4e5"
+					}
+				},
+				"metadata": {
+					"saveOutput": true,
+					"synapse_widget": {
+						"version": "0.1"
+					},
+					"enableDebugMode": false,
+					"kernelspec": {
+						"name": "synapse_pyspark",
+						"display_name": "python"
+					},
+					"language_info": {
+						"name": "python"
+					},
+					"sessionKeepAliveTimeout": 30
+				},
+				"cells": [
+					{
+						"cell_type": "code",
+						"source": [
+							"import csv\n",
+							"import os\n",
+							"import requests\n",
+							"import time\n",
+							"from bs4 import BeautifulSoup\n",
+							"import logging\n",
+							"\n",
+							"logging.basicConfig(level=logging.INFO)"
+						],
+						"outputs": [],
+						"execution_count": 2
+					},
+					{
+						"cell_type": "code",
+						"source": [
+							"def fetch_and_parse_page(url):\n",
+							"    headers = {\n",
+							"        \"User-Agent\": \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3\"\n",
+							"    }\n",
+							"    response = requests.get(url, headers=headers)\n",
+							"    soup = BeautifulSoup(response.text, 'html.parser')\n",
+							"    return soup"
+						],
+						"outputs": [],
+						"execution_count": 3
+					},
+					{
+						"cell_type": "markdown",
+						"source": [
+							"Setting the url to the items page and finding all divs that contain the links to the separate items."
+						]
+					},
+					{
+						"cell_type": "code",
+						"source": [
+							"base_url = \"https://u.gg/lol/items\"\n",
+							"soup = fetch_and_parse_page(base_url)\n",
+							"items_list = soup.find_all('div', class_='items-container')\n",
+							"print(items_list)"
+						],
+						"outputs": []
+					},
+					{
+						"cell_type": "markdown",
+						"source": [
+							"Now to grab the name specifically which is in the 'alt' portion of the div (basically what shows up if the image couldn't load clientside). Note this doesn't need to be run every time, but is here when it does (e.g. each new patch or hotfix)."
+						]
+					},
+					{
+						"cell_type": "code",
+						"source": [
+							"with open('data/item_names.csv', 'w+', newline='') as item_names_csv:\n",
+							"    writer = csv.writer(item_names_csv)\n",
+							"    for item in items_list:\n",
+							"        item_name = item.find_all('img')\n",
+							"        for temp in item_name:\n",
+							"            if temp['alt']:\n",
+							"                print(temp['alt'])\n",
+							"                writer.writerow([temp['alt']])    "
+						],
+						"outputs": []
+					},
+					{
+						"cell_type": "code",
+						"source": [
+							"def fetch_champion_data(champion, base_url):\n",
+							"    # Visit the champion's individual page\n",
+							"    champion_url = base_url + champion.lower() + \"/\" + \"build\"\n",
+							"    champion_soup = fetch_and_parse_page(champion_url)\n",
+							"\n",
+							"    try:\n",
+							"        role_value = champion_soup.find('span', class_='champion-title').text.strip().split('Build for ')[1].split(', ')[0]\n",
+							"        matches_value = champion_soup.find('div', class_='matches').find('div', class_='value').text.strip()\n",
+							"        win_rate_value = champion_soup.find('div', class_='win-rate').find('div', class_='value').text.strip()\n",
+							"        pick_rate_value = champion_soup.find('div', class_='pick-rate').find('div', class_='value').text.strip()\n",
+							"        ban_rate_value = champion_soup.find('div', class_='ban-rate').find('div', class_='value').text.strip()\n",
+							"    except Exception as e:\n",
+							"        logging.error(f'Error fetching data for {champion}: {str(e)}')\n",
+							"        return None\n",
+							"\n",
+							"    logging.info(f'{champion} done.')\n",
+							"    time.sleep(2)  # Consider making this configurable\n",
+							"    return [champion, role_value, matches_value, win_rate_value, pick_rate_value, ban_rate_value]"
+						],
+						"outputs": []
+					},
+					{
+						"cell_type": "markdown",
+						"source": [
+							""
+						]
+					},
+					{
+						"cell_type": "code",
+						"source": [
+							"item_names_list = \n",
+							"item_url = base_url + \n",
+							"\n",
+							"temp = items_list.find('div', class_='item-details-container')\n",
+							"print(temp)"
+						],
+						"outputs": []
+					},
+					{
+						"cell_type": "code",
+						"source": [
+							"with open('data/item_names.csv', 'w+', newline='') as item_names_csv:\n",
+							"    writer = csv.writer(item_names_csv)\n",
+							"    for item in items_list:\n",
+							"        item_name = item.find_all('img')\n",
+							"        for temp in item_name:\n",
+							"            if temp['alt']:\n",
+							"                print(temp['alt'])\n",
+							"                writer.writerow([temp['alt']])    "
+						],
+						"outputs": [],
+						"execution_count": 10
+					}
+				]
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/core4')]",
+			"type": "Microsoft.Synapse/workspaces/bigDataPools",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"autoPause": {
+					"enabled": true,
+					"delayInMinutes": 15
+				},
+				"autoScale": {
+					"enabled": true,
+					"maxNodeCount": 3,
+					"minNodeCount": 3
+				},
+				"nodeCount": 10,
+				"nodeSize": "Small",
+				"nodeSizeFamily": "MemoryOptimized",
+				"sparkVersion": "3.3",
+				"isComputeIsolationEnabled": false,
+				"sessionLevelPackagesEnabled": false,
+				"annotations": []
+			},
+			"dependsOn": [],
+			"location": "eastus"
+		}
+	]
+}
