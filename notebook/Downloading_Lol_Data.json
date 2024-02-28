@@ -1,6 +1,9 @@
 {
 	"name": "Downloading_Lol_Data",
 	"properties": {
+		"folder": {
+			"name": "Importing Data"
+		},
 		"nbformat": 4,
 		"nbformat_minor": 2,
 		"bigDataPool": {
@@ -18,7 +21,7 @@
 				"spark.dynamicAllocation.enabled": "false",
 				"spark.dynamicAllocation.minExecutors": "2",
 				"spark.dynamicAllocation.maxExecutors": "2",
-				"spark.autotune.trackingId": "04b005f6-e0c5-431e-bdae-8a7820405d1c"
+				"spark.autotune.trackingId": "d575cfb1-18d9-4a3c-8094-6685def9b2f0"
 			}
 		},
 		"metadata": {
@@ -57,7 +60,7 @@
 					"import pandas as pd\n",
 					"import time"
 				],
-				"execution_count": 55
+				"execution_count": 1
 			},
 			{
 				"cell_type": "markdown",
@@ -70,10 +73,10 @@
 			{
 				"cell_type": "code",
 				"source": [
-					"api_key = 'RGAPI-623b77f2-5dd7-4278-9ec3-e43ec904637c'\r\n",
+					"api_key = 'RGAPI-8526afc2-81e8-49ce-aa53-59a94379c0a0'\r\n",
 					"patch_number = '14.4.1'"
 				],
-				"execution_count": 56
+				"execution_count": 2
 			},
 			{
 				"cell_type": "code",
@@ -204,7 +207,7 @@
 					"challenger_data = r.json()\n",
 					"print(challenger_data)"
 				],
-				"execution_count": 65
+				"execution_count": 3
 			},
 			{
 				"cell_type": "code",
@@ -225,7 +228,7 @@
 					"\n",
 					"print(challenger_temp_list_2)"
 				],
-				"execution_count": 66
+				"execution_count": 4
 			},
 			{
 				"cell_type": "code",
@@ -239,7 +242,7 @@
 					"challenger_details.rename(columns={0: \"summonerId\", 1: \"summonerName\", 2: \"leaguePoints\"}, inplace=True)\n",
 					"challenger_details"
 				],
-				"execution_count": 67
+				"execution_count": 8
 			},
 			{
 				"cell_type": "markdown",
@@ -263,13 +266,16 @@
 					"    current_summoner = row['summonerId']\n",
 					"    summoner_url = 'https://na1.api.riotgames.com/lol/summoner/v4/summoners/' + current_summoner  + '?' + 'api_key=' + api_key\n",
 					"    r = requests.get(summoner_url)\n",
+					"    while r.status_code == 429:\n",
+					"        time.sleep(20)\n",
+					"        r = requests.get(summoner_url)\n",
 					"    summoner_data = r.json()\n",
 					"    challenger_details.replace(current_summoner, summoner_data['puuid'], inplace=True)\n",
-					"    time.sleep(3)\n",
+					"    \n",
 					"\n",
 					"challenger_details.head()"
 				],
-				"execution_count": 68
+				"execution_count": 9
 			},
 			{
 				"cell_type": "markdown",
@@ -283,15 +289,7 @@
 					"challenger_details.rename(columns={\"summonerId\": \"puuid\"}, inplace=True)\n",
 					"challenger_details.head()"
 				],
-				"execution_count": 69
-			},
-			{
-				"cell_type": "code",
-				"source": [
-					"for i in range(5):\n",
-					"    print(challenger_details.iloc[i]['puuid'])"
-				],
-				"execution_count": 70
+				"execution_count": 10
 			},
 			{
 				"cell_type": "code",
@@ -313,11 +311,14 @@
 					"def challenger_matchlist(current_puuid):\n",
 					"    challenger_matchlist_url = 'https://americas.api.riotgames.com/lol/match/v5/matches/by-puuid/' + current_puuid + '/ids?queue=420&start=0&count=20&api_key=' + api_key\n",
 					"    r = requests.get(challenger_matchlist_url)\n",
+					"    while r.status_code == 429:\n",
+					"        time.sleep(20)\n",
+					"        r = requests.get(challenger_matchlist_url)\n",
 					"    matchlist_data = r.json()\n",
 					"    print(matchlist_data)\n",
 					"    return matchlist_data"
 				],
-				"execution_count": 75
+				"execution_count": 12
 			},
 			{
 				"cell_type": "code",
@@ -326,11 +327,15 @@
 					"    #current_match = 'NA1_4900084850'\n",
 					"    match_url = 'https://americas.api.riotgames.com/lol/match/v5/matches/' + current_match + '?api_key=' + api_key\n",
 					"    r = requests.get(match_url)\n",
+					"    while r.status_code == 429:\n",
+					"        time.sleep(20)\n",
+					"        r = requests.get(match_url)\n",
+					"        print(r.status_code)\n",
 					"    match_data = r.json()\n",
-					"    print(match_data)\n",
+					"    #print(match_data)\n",
 					"    return match_data"
 				],
-				"execution_count": 76
+				"execution_count": 21
 			},
 			{
 				"cell_type": "code",
@@ -341,7 +346,7 @@
 					"    player_info = match_data['info']['participants'][player_index]\n",
 					"    return player_info"
 				],
-				"execution_count": 77
+				"execution_count": 14
 			},
 			{
 				"cell_type": "markdown",
@@ -379,7 +384,7 @@
 					"    'win': []\n",
 					"}"
 				],
-				"execution_count": 78
+				"execution_count": 15
 			},
 			{
 				"cell_type": "code",
@@ -412,13 +417,44 @@
 					"    match_data_kept['visionScore'].append(current_match_data['visionScore'])\n",
 					"    match_data_kept['win'].append(current_match_data['win'])"
 				],
-				"execution_count": 79
+				"execution_count": 16
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"source_hidden": false,
+						"outputs_hidden": false
+					},
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"print(len(challenger_details))"
+				],
+				"execution_count": 23
+			},
+			{
+				"cell_type": "markdown",
+				"metadata": {
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"For now, it grabs the 20 most recent matches. Will scale with orchestration to allow far more, especially if Dev Key is upgraded."
+				]
 			},
 			{
 				"cell_type": "code",
 				"source": [
 					"\n",
-					"for i in range(15, 18):\n",
+					"for i in range(len(challenger_details)):\n",
 					"    puuid = challenger_details.iloc[i]['puuid']\n",
 					"    matchlist = challenger_matchlist(puuid)\n",
 					"    for j in range(20):\n",
@@ -426,7 +462,7 @@
 					"        player_data = find_player(match_data, puuid)\n",
 					"        assign_match_data_values(player_data)"
 				],
-				"execution_count": 80
+				"execution_count": 22
 			},
 			{
 				"cell_type": "code",
@@ -438,7 +474,7 @@
 				"source": [
 					"match_data_kept"
 				],
-				"execution_count": 81
+				"execution_count": 18
 			},
 			{
 				"cell_type": "code",
@@ -451,7 +487,7 @@
 					"match_dataframe = pd.DataFrame(match_data_kept)\n",
 					"match_dataframe"
 				],
-				"execution_count": 82
+				"execution_count": 19
 			},
 			{
 				"cell_type": "code",

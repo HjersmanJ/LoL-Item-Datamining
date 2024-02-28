@@ -1,0 +1,26 @@
+{
+	"name": "Grab Daily Matches",
+	"properties": {
+		"description": "This is after the ladder reset so new entries into the challenger queue should be populated.",
+		"annotations": [],
+		"runtimeState": "Started",
+		"pipelines": [
+			{
+				"pipelineReference": {
+					"referenceName": "Pipeline 1",
+					"type": "PipelineReference"
+				}
+			}
+		],
+		"type": "ScheduleTrigger",
+		"typeProperties": {
+			"recurrence": {
+				"frequency": "Day",
+				"interval": 1,
+				"startTime": "2024-02-27T05:30:00",
+				"endTime": "2024-03-15T10:30:00",
+				"timeZone": "Pacific Standard Time"
+			}
+		}
+	}
+}
