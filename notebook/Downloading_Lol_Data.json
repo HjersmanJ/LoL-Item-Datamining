@@ -21,7 +21,7 @@
 				"spark.dynamicAllocation.enabled": "false",
 				"spark.dynamicAllocation.minExecutors": "2",
 				"spark.dynamicAllocation.maxExecutors": "2",
-				"spark.autotune.trackingId": "20ee85b0-9234-4438-b22c-18ee02a15164"
+				"spark.autotune.trackingId": "e5fe055b-ae78-4ace-884d-d15d8980d58f"
 			}
 		},
 		"metadata": {
@@ -109,9 +109,7 @@
 				},
 				"source": [
 					"item_url = f'https://ddragon.leagueoflegends.com/cdn/{patch_number}/data/en_US/item.json'\n",
-					"r = requests.get(item_url)\n",
-					"item_data = r.json()\n",
-					"print(item_data)"
+					"item_data = fetch_api_data(item_url)"
 				],
 				"execution_count": 57
 			},
@@ -167,9 +165,7 @@
 				},
 				"source": [
 					"champion_url = f'https://ddragon.leagueoflegends.com/cdn/{patch_number}/data/en_US/champion.json'\n",
-					"r = requests.get(champion_url)\n",
-					"champion_data = r.json()\n",
-					"print(champion_data)"
+					"champion_data = fetch_api_data(champion_url)"
 				],
 				"execution_count": 61
 			},
