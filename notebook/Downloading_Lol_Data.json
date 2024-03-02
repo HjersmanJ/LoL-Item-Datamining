@@ -21,7 +21,7 @@
 				"spark.dynamicAllocation.enabled": "false",
 				"spark.dynamicAllocation.minExecutors": "2",
 				"spark.dynamicAllocation.maxExecutors": "2",
-				"spark.autotune.trackingId": "e37270ba-a097-4a01-9f70-c1cb52218dce"
+				"spark.autotune.trackingId": "f26fe496-8192-4b36-ab94-8bc7092442a6"
 			}
 		},
 		"metadata": {
@@ -436,24 +436,6 @@
 				"execution_count": 16
 			},
 			{
-				"cell_type": "code",
-				"metadata": {
-					"jupyter": {
-						"source_hidden": false,
-						"outputs_hidden": false
-					},
-					"nteract": {
-						"transient": {
-							"deleting": false
-						}
-					}
-				},
-				"source": [
-					"print(len(challenger_details))"
-				],
-				"execution_count": 23
-			},
-			{
 				"cell_type": "markdown",
 				"metadata": {
 					"nteract": {
@@ -479,18 +461,6 @@
 					"        assign_match_data_values(player_data)"
 				],
 				"execution_count": 22
-			},
-			{
-				"cell_type": "code",
-				"metadata": {
-					"jupyter": {
-						"outputs_hidden": true
-					}
-				},
-				"source": [
-					"match_data_kept"
-				],
-				"execution_count": 18
 			},
 			{
 				"cell_type": "code",
