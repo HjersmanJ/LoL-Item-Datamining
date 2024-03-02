@@ -21,7 +21,7 @@
 				"spark.dynamicAllocation.enabled": "false",
 				"spark.dynamicAllocation.minExecutors": "2",
 				"spark.dynamicAllocation.maxExecutors": "2",
-				"spark.autotune.trackingId": "e5fe055b-ae78-4ace-884d-d15d8980d58f"
+				"spark.autotune.trackingId": "e37270ba-a097-4a01-9f70-c1cb52218dce"
 			}
 		},
 		"metadata": {
@@ -221,9 +221,7 @@
 				},
 				"source": [
 					"challenger_queue_url = 'https://na1.api.riotgames.com/lol/league/v4/challengerleagues/by-queue/RANKED_SOLO_5x5?api_key=' + api_key\n",
-					"r = requests.get(challenger_queue_url)\n",
-					"challenger_data = r.json()\n",
-					"print(challenger_data)"
+					"challenger_data = fetch_api_data(challenger_queue_url)"
 				],
 				"execution_count": 3
 			},
