@@ -21,7 +21,7 @@
 				"spark.dynamicAllocation.enabled": "false",
 				"spark.dynamicAllocation.minExecutors": "2",
 				"spark.dynamicAllocation.maxExecutors": "2",
-				"spark.autotune.trackingId": "a5ce39d0-c4e9-4711-8045-110038d0c721"
+				"spark.autotune.trackingId": "f26fe496-8192-4b36-ab94-8bc7092442a6"
 			}
 		},
 		"metadata": {
@@ -82,14 +82,34 @@
 				"cell_type": "code",
 				"metadata": {
 					"jupyter": {
+						"source_hidden": false,
+						"outputs_hidden": false
+					},
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"def fetch_api_data(url):\r\n",
+					"    r = requests.get(url)\r\n",
+					"    url_data = r.json()\r\n",
+					"    print(url_data)\r\n",
+					"    return url_data"
+				],
+				"execution_count": null
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
 						"outputs_hidden": true
 					}
 				},
 				"source": [
 					"item_url = f'https://ddragon.leagueoflegends.com/cdn/{patch_number}/data/en_US/item.json'\n",
-					"r = requests.get(item_url)\n",
-					"item_data = r.json()\n",
-					"print(item_data)"
+					"item_data = fetch_api_data(item_url)"
 				],
 				"execution_count": 57
 			},
@@ -145,9 +165,7 @@
 				},
 				"source": [
 					"champion_url = f'https://ddragon.leagueoflegends.com/cdn/{patch_number}/data/en_US/champion.json'\n",
-					"r = requests.get(champion_url)\n",
-					"champion_data = r.json()\n",
-					"print(champion_data)"
+					"champion_data = fetch_api_data(champion_url)"
 				],
 				"execution_count": 61
 			},
@@ -203,9 +221,7 @@
 				},
 				"source": [
 					"challenger_queue_url = 'https://na1.api.riotgames.com/lol/league/v4/challengerleagues/by-queue/RANKED_SOLO_5x5?api_key=' + api_key\n",
-					"r = requests.get(challenger_queue_url)\n",
-					"challenger_data = r.json()\n",
-					"print(challenger_data)"
+					"challenger_data = fetch_api_data(challenger_queue_url)"
 				],
 				"execution_count": 3
 			},
@@ -420,24 +436,6 @@
 				"execution_count": 16
 			},
 			{
-				"cell_type": "code",
-				"metadata": {
-					"jupyter": {
-						"source_hidden": false,
-						"outputs_hidden": false
-					},
-					"nteract": {
-						"transient": {
-							"deleting": false
-						}
-					}
-				},
-				"source": [
-					"print(len(challenger_details))"
-				],
-				"execution_count": 23
-			},
-			{
 				"cell_type": "markdown",
 				"metadata": {
 					"nteract": {
@@ -463,18 +461,6 @@
 					"        assign_match_data_values(player_data)"
 				],
 				"execution_count": 22
-			},
-			{
-				"cell_type": "code",
-				"metadata": {
-					"jupyter": {
-						"outputs_hidden": true
-					}
-				},
-				"source": [
-					"match_data_kept"
-				],
-				"execution_count": 18
 			},
 			{
 				"cell_type": "code",
