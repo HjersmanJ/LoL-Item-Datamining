@@ -21,7 +21,7 @@
 				"spark.dynamicAllocation.enabled": "false",
 				"spark.dynamicAllocation.minExecutors": "2",
 				"spark.dynamicAllocation.maxExecutors": "2",
-				"spark.autotune.trackingId": "a5ce39d0-c4e9-4711-8045-110038d0c721"
+				"spark.autotune.trackingId": "20ee85b0-9234-4438-b22c-18ee02a15164"
 			}
 		},
 		"metadata": {
@@ -77,6 +77,28 @@
 					"patch_number = '14.4.1'"
 				],
 				"execution_count": 2
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"source_hidden": false,
+						"outputs_hidden": false
+					},
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"def fetch_api_data(url):\r\n",
+					"    r = requests.get(url)\r\n",
+					"    url_data = r.json()\r\n",
+					"    print(url_data)\r\n",
+					"    return url_data"
+				],
+				"execution_count": null
 			},
 			{
 				"cell_type": "code",
