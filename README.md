@@ -136,7 +136,7 @@ Some samples of successful pipeline runs can be found below.
 
 ![Validation_Success](readme_links/Latest_Successful_Validation_Pipeline_Run.png)
 
-The dataset is ohtoutted to Synapse, but for the viewer's convenience, it can be found in the "final_output" folder. The first version is titled "challenger_details".
+The dataset is outputted to the integrated Synapse file system, but for the viewer's convenience, it can also be found in the "final_dataset" folder. The first version is titled "challenger_details".
 
 ![Transformation_Success](readme_links/Latest_Successful_Transformation_Pipeline_Run.png)
 
